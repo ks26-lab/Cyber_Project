@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GRIDSEC | Real-Time Cascade Visualizer &amp; Event Timeline</title>
+
+  <!-- Fonts: Plus Jakarta Sans & Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/map.css">
+  <link rel="stylesheet" href="css/views.css">
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="soc-header">
+    <div class="soc-brand">
+      <a href="app.html#cascade" class="logo-icon" style="text-decoration:none;">
+        <i class="fa-solid fa-diagram-project" style="color:#4f46e5;"></i>
+      </a>
+      <div class="soc-title-group">
+        <h1>GRIDSEC Real-Time Cascade Visualizer</h1>
+        <p>National Power Grid Cyber Resilience &bull; Multi-Step Physical Cascade Orchestration</p>
+      </div>
+    </div>
+
+    <div class="soc-status-group">
+      <!-- Safety Status Badge -->
+      <div class="soc-status-badge" style="background:#e0e7ff; border-color:#c7d2fe;">
+        <span class="status-dot healthy"></span>
+        <span style="color:#4338ca; font-weight:700;">Sandbox Isolation Active &bull; Base Grid Immutable</span>
+      </div>
+
+      <a href="attack_simulator.html" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.8rem;">
+        <i class="fa-solid fa-crosshairs" style="color:#dc2626;"></i> Attack Simulator
+      </a>
+
+      <a href="app.html#dashboard" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.8rem;">
+        <i class="fa-solid fa-gauge-high"></i> Operations Dashboard
+      </a>
+
+      <a href="index.html" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.8rem;">
+        <i class="fa-solid fa-house"></i> Home
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Viewport for Cascade Visualizer -->
+  <main id="socMainViewport" class="soc-viewport" style="max-width:1440px; margin:0 auto; padding:1.25rem;">
+    <!-- Rendered dynamically by CascadeView -->
+  </main>
+
+  <!-- DSA Details Modal -->
+  <div id="dsaModalBackdrop" class="soc-modal-backdrop" onclick="if(event.target === this) window.app.closeDsaModal()">
+    <div class="soc-modal">
+      <div class="modal-header">
+        <h3 id="modalDsaTitle" style="font-size:1.05rem; color:#1c1917;">Algorithm Architecture</h3>
+        <button class="btn btn-secondary" style="padding:0.25rem 0.5rem;" onclick="window.app.closeDsaModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="modalDsaBody" class="modal-body">
+        <!-- Populated via JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="window.app.closeDsaModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core Scripts -->
+  <script src="js/data/gridData.js"></script>
+  <script src="js/data/threatData.js"></script>
+  <script src="js/engine/graph.js"></script>
+  <script src="js/engine/dsaEngine.js"></script>
+  <script src="js/views/cascadeView.js"></script>
+  <script src="js/interactions.js"></script>
+
+  <!-- App Bootstrap for Standalone Page -->
+  <script>
+    window.app = {
+      showDsaModal: function(algo) {
+        const backdrop = document.getElementById("dsaModalBackdrop");
+        const title = document.getElementById("modalDsaTitle");
+        const body = document.getElementById("modalDsaBody");
+        if (!backdrop || !title || !body) return;
+
+        const descriptions = {
+          hash_table: {
+            title: "O(1) Direct Hash Table Indexing",
+            content: "Asset lookups execute in guaranteed O(1) constant time across multiple indexing dimensions (asset ID, substation, voltage class)."
+          },
+          bfs: {
+            title: "O(V+E) Breadth-First Search (BFS) Blast Radius",
+            content: "Traverses graph topology breadth-first to determine topological hop blast radius from disturbed assets and contingency zones."
+          },
+          dfs: {
+            title: "O(V+E) Depth-First Search (DFS) Islanding Detection",
+            content: "Evaluates graph connectivity and identifies disconnected electrical sub-networks (islands) following transmission line trips."
+          },
+          priority_queue: {
+            title: "O(log N) Binary Max-Heap Priority Ranking",
+            content: "Ranks candidate physical limit violations by severity score to select the most critical propagation candidate deterministically."
+          },
+          dijkstra: {
+            title: "O((V+E) log V) Dijkstra Optimal Rerouting",
+            content: "Calculates the lowest-impedance electrical bypass route to restore power flow between disconnected generator and load substations."
+          }
+        };
+
+        const d = descriptions[algo] || descriptions.hash_table;
+        title.textContent = d.title;
+        body.innerHTML = `<p style="font-size:0.85rem; line-height:1.6; color:#334155;">${d.content}</p>`;
+        backdrop.classList.add("active");
+      },
+      closeDsaModal: function() {
+        const backdrop = document.getElementById("dsaModalBackdrop");
+        if (backdrop) backdrop.classList.remove("active");
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const container = document.getElementById("socMainViewport");
+      if (container && window.CascadeView) {
+        container.innerHTML = window.CascadeView.render(window.app);
+      }
+    });
+  </script>
+</body>
+</html>

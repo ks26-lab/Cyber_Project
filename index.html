@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GRIDSEC | Power Grid Cybersecurity &amp; Resilience</title>
+  <meta name="description" content="Cybersecurity operations, anomaly detection, and automated resilience platform for electric power grids.">
+
+  <!-- Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/landing.css">
+  <link rel="stylesheet" href="css/map.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="landing-navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-icon">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <span>GRIDSEC</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="app.html#map" class="nav-link" style="font-weight:700; color:#166534;"><i class="fa-solid fa-map-location-dot"></i> India Grid Map</a></li>
+        <li><a href="#features" class="nav-link">Capabilities</a></li>
+        <li><a href="#interactive-demo" class="nav-link">Live Preview</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <div class="soc-live-clock" style="display:none; @media(min-width:768px){display:flex;}">
+          <span class="live-pulse-dot"></span>
+          <span class="clock-time" id="landingLiveClock">--:--:-- IST</span>
+        </div>
+        <a href="app.html#map" class="btn btn-primary">
+          <span>Open National Grid Map</span>
+          <i class="fa-solid fa-arrow-right" style="font-size:0.75rem;"></i>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-content">
+        <span class="hero-tag">Power Grid Cybersecurity &amp; Resilience</span>
+        <h1 class="hero-title">
+          Protecting critical electric power networks against cyber disruption.
+        </h1>
+        <p class="hero-subtitle">
+          GRIDSEC provides real-time SCADA anomaly detection, multi-hop incident propagation tracking, and automated contingency rerouting across India's synchronous national grid.
+        </p>
+        <div class="hero-cta-group">
+          <a href="app.html#map" class="btn btn-primary" style="padding: 0.75rem 1.75rem;">
+            <span>Explore India Power Grid Map</span>
+            <i class="fa-solid fa-arrow-right" style="font-size:0.75rem;"></i>
+          </a>
+          <a href="#interactive-demo" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
+            <span>Interactive Map Preview</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Interactive Preview Widget: SCADA Topology & Resilience Sandbox -->
+      <div id="interactive-demo" class="hero-preview-wrapper">
+        <div class="preview-topbar">
+          <div class="preview-title">
+            <i class="fa-solid fa-circle-nodes"></i>
+            <span>GRID TOPOLOGY EMULATOR // SCADA ANOMALY DETECTION SANDBOX</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            <div class="badge badge-healthy">
+              <span class="status-dot healthy"></span>
+              <span>All Systems Nominal (50.002 Hz)</span>
+            </div>
+            <a href="app.html" class="btn btn-primary" style="padding:0.3rem 0.75rem; font-size:0.75rem;">
+              <span>Open Operations Dashboard &amp; Map</span> <i class="fa-solid fa-arrow-right" style="font-size:0.7rem;"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="preview-interactive-sandbox">
+          <!-- Canvas Area -->
+          <div class="sandbox-map-area">
+            <div class="sandbox-controls">
+              <span style="font-size:0.78rem; font-weight:600; color:var(--text-muted);">
+                Simulation Controls:
+              </span>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button id="demoBtnAttack" class="sandbox-btn">
+                  <i class="fa-solid fa-triangle-exclamation" style="color:#b91c1c;"></i> Inject Breach
+                </button>
+                <button id="demoBtnReroute" class="sandbox-btn">
+                  <i class="fa-solid fa-route" style="color:#166534;"></i> Compute Alternate Route
+                </button>
+                <button id="demoBtnReset" class="sandbox-btn">
+                  <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
+              </div>
+            </div>
+            <div class="sandbox-canvas-wrapper">
+              <canvas id="landingPreviewCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Sidebar Telemetry -->
+          <div class="sandbox-telemetry-sidebar">
+            <div class="telemetry-row">
+              <div class="telemetry-label">Grid Availability Index</div>
+              <div id="demoHealthVal" class="telemetry-val">99.8%</div>
+              <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">Operational capacity: 3,120 MW</div>
+            </div>
+
+            <div class="telemetry-row">
+              <div class="telemetry-label">Computational Engine</div>
+              <div style="font-size:0.9rem; font-weight:600; color:#1c1917;">
+                Dijkstra Min-Risk Rerouting
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                Latency: 3.4ms | Graph: 59 Vertices &middot; 54 Corridors
+              </div>
+            </div>
+
+            <div>
+              <div class="telemetry-label" style="margin-bottom:0.4rem;">Live SCADA Protocol Stream</div>
+              <div id="demoLogFeed" class="live-log-feed">
+                <!-- Populated via JS -->
+              </div>
+            </div>
+
+            <a href="app.html" class="btn btn-primary" style="margin-top:auto; justify-content:center; padding:0.6rem 1rem;">
+              <span>Launch Full National Grid Dashboard</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Flowing Metrics Section (No block cards) -->
+  <section class="container">
+    <div class="metrics-flow">
+      <div class="metric-item">
+        <div class="num"><span class="counter-val" data-target="99.999" data-decimals="3">0</span>%</div>
+        <div class="label">System Uptime Guarantee</div>
+      </div>
+      <div class="metric-item">
+        <div class="num"><span class="counter-val" data-target="65" data-decimals="0">0</span>ms</div>
+        <div class="label">Anomaly Detection Latency</div>
+      </div>
+      <div class="metric-item">
+        <div class="num"><span class="counter-val" data-target="140" data-decimals="0">0</span>+</div>
+        <div class="label">High-Voltage Substations</div>
+      </div>
+      <div class="metric-item">
+        <div class="num"><span class="counter-val" data-target="100" data-decimals="0">0</span>%</div>
+        <div class="label">NERC CIP-014 Alignment</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Flowing Editorial Features (No boxy grids) -->
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-tag">Capabilities</span>
+        <h2 class="section-title">Engineered for electric transmission &amp; distribution security</h2>
+        <p class="section-desc">
+          A purpose-built platform pairing operational technology physics with discrete network algorithms.
+        </p>
+      </div>
+
+      <div class="features-list">
+        <div class="feature-entry">
+          <h3>SCADA &amp; Protocol Anomaly Detection</h3>
+          <p>
+            Monitors DNP3, Modbus TCP, and IEC 60870 communications in real time to catch unauthorized breaker commands, packet injection, and false telemetry.
+          </p>
+          <span class="feature-algo-tag">Stream Buffer O(1)</span>
+        </div>
+
+        <div class="feature-entry">
+          <h3>Multi-Hop Attack Path Traversal</h3>
+          <p>
+            Traces lateral movement across feeders and substations level-by-level, identifying origin, affected assets, and threatened critical loads.
+          </p>
+          <span class="feature-algo-tag">Breadth-First Search O(V+E)</span>
+        </div>
+
+        <div class="feature-entry">
+          <h3>Resilient Alternate Rerouting</h3>
+          <p>
+            When substations are isolated or compromised, automatically calculates lowest-loss power and telemetry bypass routes around affected nodes.
+          </p>
+          <span class="feature-algo-tag">Dijkstra Min-Risk O((V+E)log V)</span>
+        </div>
+
+        <div class="feature-entry">
+          <h3>Single Point of Failure Discovery</h3>
+          <p>
+            Discovers transmission articulation points and critical bridges whose sudden failure would cause regional blackouts or islanding.
+          </p>
+          <span class="feature-algo-tag">Tarjan's Articulation Points O(V+E)</span>
+        </div>
+
+        <div class="feature-entry">
+          <h3>Contingency Resilience Simulator</h3>
+          <p>
+            Simulate cyber attacks and cascading outages to stress-test your network before adversaries strike and validate isolation playbooks.
+          </p>
+          <span class="feature-algo-tag">Cascade Blast Queue</span>
+        </div>
+
+        <div class="feature-entry">
+          <h3>Automated Response Playbooks</h3>
+          <p>
+            One-click incident containment actions: quarantine compromised RTUs, reconfigure firewalls, and redirect power through redundant lines.
+          </p>
+          <span class="feature-algo-tag">Priority Action Queues</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="landing-footer">
+    <div class="container">
+      <div class="footer-columns">
+        <div class="footer-col" style="max-width:320px;">
+          <a href="index.html" class="brand-logo" style="margin-bottom: 0.75rem;">
+            <div class="logo-icon">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <span>GRIDSEC</span>
+          </a>
+          <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.6;">
+            Next-generation cybersecurity, anomaly detection, and automated resilience platform for electric power grids.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul class="footer-links">
+            <li><a href="app.html">Operations Dashboard</a></li>
+            <li><a href="app.html">India Power Grid Map</a></li>
+            <li><a href="app.html">SCADA Threat Detection</a></li>
+            <li><a href="app.html">Incident Investigation</a></li>
+            <li><a href="app.html">Resilience Simulator</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Resilience Engine</h4>
+          <ul class="footer-links">
+            <li><a href="app.html">Threat Traversal</a></li>
+            <li><a href="app.html">Min-Risk Rerouting</a></li>
+            <li><a href="app.html">Critical Bridge Detection</a></li>
+            <li><a href="app.html">Grid Islanding Defense</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Regulatory</h4>
+          <ul class="footer-links">
+            <li><a href="#features">NERC CIP-014</a></li>
+            <li><a href="#features">IEC 62443</a></li>
+            <li><a href="#features">NIST SP 800-82</a></li>
+            <li><a href="#features">IEEE 1547</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 GRIDSEC Inc. All rights reserved.</div>
+        <div style="display:flex; gap: 1.25rem;">
+          <a href="#" style="color:var(--text-dim); text-decoration:none;">Privacy</a>
+          <a href="#" style="color:var(--text-dim); text-decoration:none;">Terms</a>
+          <a href="#" style="color:var(--text-dim); text-decoration:none;">Security</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive Global & Landing Page Scripts -->
+  <script src="js/interactions.js"></script>
+  <script src="js/landing.js"></script>
+</body>
+</html>

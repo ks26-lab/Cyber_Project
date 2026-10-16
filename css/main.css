@@ -1,0 +1,359 @@
+/* ==========================================================================
+   GRIDSEC Warm Editorial Minimalist Design System (Zero Blue, No Dark Mode)
+   Warm Stone & Sage Forest Palette with Flowing Editorial Whitespace
+   ========================================================================== */
+
+:root {
+  /* Warm Natural Palette */
+  --bg-primary: #fdfdfc;          /* Pure warm paper */
+  --bg-secondary: #f7f6f2;        /* Soft stone ivory */
+  --bg-tertiary: #f0eee6;         /* Light sand tone */
+  --bg-card: #ffffff;
+  
+  /* Earth & Botanical Accents (Zero Blue) */
+  --accent-primary: #1c1917;      /* Warm Charcoal */
+  --accent-earth: #78350f;        /* Warm Amber Chestnut */
+  --accent-forest: #166534;       /* Deep Forest Sage */
+  --accent-forest-subtle: #f0fdf4;
+  --accent-terracotta: #c2410c;   /* Terracotta Rust */
+  --accent-terracotta-subtle: #fff7ed;
+  
+  /* Status Colors */
+  --status-healthy: #15803d;
+  --status-healthy-bg: #f0fdf4;
+  --status-healthy-border: #bbf7d0;
+  
+  --status-warning: #b45309;
+  --status-warning-bg: #fffbeb;
+  --status-warning-border: #fde68a;
+  
+  --status-critical: #b91c1c;
+  --status-critical-bg: #fef2f2;
+  --status-critical-border: #fecaca;
+  
+  /* Warm Editorial Typography */
+  --text-main: #1c1917;           /* Stone 900 */
+  --text-body: #44403c;           /* Stone 700 */
+  --text-muted: #78716c;          /* Stone 500 */
+  --text-dim: #a8a29e;            /* Stone 400 */
+  
+  --border-subtle: #e7e5e4;       /* Stone 200 */
+  --border-light: #f5f5f4;        /* Stone 100 */
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', var(--font-sans);
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --transition-base: 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  --interaction-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --interaction-duration: 0.24s;
+}
+
+/* ==========================================================================
+   Global Custom Text Selection (Subtle Warm Grey Palette)
+   ========================================================================== */
+::selection {
+  background-color: #d6d3d1; /* Stone 300 warm grey */
+  color: #1c1917;            /* Stone 900 */
+}
+
+::-moz-selection {
+  background-color: #d6d3d1;
+  color: #1c1917;
+}
+
+.btn-primary::selection,
+.btn-forest::selection,
+.logo-icon::selection {
+  background-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-body);
+  line-height: 1.7;
+  overflow-x: hidden;
+  position: relative;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Typography Utilities */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+p {
+  color: var(--text-body);
+  font-size: 1rem;
+}
+
+.mono-text {
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+}
+
+/* Flowing Editorial Dividers (Replaces boxy cards) */
+.editorial-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 3rem 0;
+  border: none;
+}
+
+/* Minimalist Clean Buttons with Dynamic Interaction Surface */
+.btn,
+button:not(.leaflet-control-zoom-in):not(.leaflet-control-zoom-out),
+.sandbox-btn,
+.dsa-tab-btn,
+.map-filter-btn,
+.map-zoom-btn,
+.operator-pill-btn,
+.pincode-quick-btn,
+.pincode-modal-close-btn,
+.insp-tab-btn,
+.sidebar-toggle-btn,
+.search-clear-btn,
+[data-interactive-button] {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Ensure button child text & icons remain above the orb */
+.btn > *,
+button:not(.leaflet-control-zoom-in):not(.leaflet-control-zoom-out) > *,
+.sandbox-btn > *,
+.dsa-tab-btn > *,
+.map-filter-btn > *,
+.map-zoom-btn > *,
+.operator-pill-btn > *,
+.pincode-quick-btn > *,
+.pincode-modal-close-btn > *,
+.insp-tab-btn > *,
+.sidebar-toggle-btn > *,
+.search-clear-btn > * {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Following White Orb Element */
+.btn-orb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.4) 40%, rgba(255, 255, 255, 0) 75%);
+  filter: blur(1.5px);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50%, -50%, 0) scale(0.3);
+  transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0;
+  will-change: transform, opacity;
+  mix-blend-mode: screen;
+}
+
+/* White / Light button orb highlight adaptation */
+.btn-secondary .btn-orb {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(215, 215, 215, 0.45) 45%, rgba(255, 255, 255, 0) 75%);
+  mix-blend-mode: normal;
+  filter: blur(2px) drop-shadow(0 0 5px rgba(0, 0, 0, 0.06));
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.35rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: 1px solid transparent;
+  outline: none;
+}
+
+.btn-primary {
+  background: #1c1917;
+  color: #ffffff;
+  border: 1px solid #1c1917;
+}
+
+.btn-primary:hover {
+  background: #292524;
+  border-color: #292524;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #ffffff;
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+}
+
+.btn-secondary:hover {
+  background: #f7f6f2;
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.btn-forest {
+  background: var(--accent-forest);
+  color: #ffffff;
+  border: 1px solid var(--accent-forest);
+}
+
+.btn-forest:hover {
+  background: #14532d;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Interactive Text Color Animations (Unified Global System)
+   ========================================================================== */
+.nav-link,
+.nav-links a,
+.sidebar-nav-item,
+.soc-nav-item,
+.footer-links a,
+.brand-logo,
+.brand-logo span,
+.tech-insight-badge,
+.search-result-row,
+.pincode-modal-close-btn,
+.cascade-step-chip,
+.legend-card-header,
+.operator-trace-bar,
+a:not(.btn):not(.logo-icon):not([class*="leaflet"]) {
+  transition: color var(--interaction-duration) var(--interaction-ease),
+              background-color var(--interaction-duration) var(--interaction-ease),
+              border-color var(--interaction-duration) var(--interaction-ease),
+              transform var(--interaction-duration) var(--interaction-ease);
+}
+
+.nav-link:hover,
+.nav-links a:hover {
+  color: var(--accent-forest) !important;
+}
+
+.soc-nav-item:hover {
+  color: var(--accent-forest) !important;
+}
+
+.footer-links a:hover {
+  color: var(--text-main) !important;
+}
+
+.brand-logo:hover span {
+  color: var(--accent-forest) !important;
+}
+
+/* Minimalist Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-forest {
+  background: var(--accent-forest-subtle);
+  color: var(--accent-forest);
+  border: 1px solid var(--status-healthy-border);
+}
+
+.badge-healthy {
+  background: var(--status-healthy-bg);
+  color: var(--status-healthy);
+  border: 1px solid var(--status-healthy-border);
+}
+
+.badge-warning {
+  background: var(--status-warning-bg);
+  color: var(--status-warning);
+  border: 1px solid var(--status-warning-border);
+}
+
+.badge-critical {
+  background: var(--status-critical-bg);
+  color: var(--status-critical);
+  border: 1px solid var(--status-critical-border);
+}
+
+.badge-neutral {
+  background: #f5f5f4;
+  color: var(--text-body);
+  border: 1px solid var(--border-subtle);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.healthy { background-color: var(--status-healthy); }
+.status-dot.critical { background-color: var(--status-critical); }
+.status-dot.warning { background-color: var(--status-warning); }
+.status-dot.forest { background-color: var(--accent-forest); }
+
+/* Fluid Scalable Container & Layout */
+.container {
+  width: 100%;
+  max-width: min(94vw, 1520px);
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 2.5rem);
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding-inline: 1rem;
+  }
+}
+
+/* ==========================================================================
+   Reduced Motion Accessibility (Unified Interaction System)
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .btn-orb {
+    display: none !important;
+  }
+}
+

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GRIDSEC | National Power Grid Operations Center</title>
+
+  <!-- Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/map.css">
+  <link rel="stylesheet" href="css/views.css">
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="soc-header">
+    <div class="soc-brand">
+      <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="window.app.toggleSidebar()" title="Toggle Sidebar">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <a href="index.html" class="logo-icon" style="text-decoration:none;">
+        <i class="fa-solid fa-bolt"></i>
+      </a>
+      <div class="soc-title-group">
+        <h1>GRIDSEC Operations</h1>
+        <p>National Power Grid Cyber Resilience · Grid-India / PGCIL Sync</p>
+      </div>
+    </div>
+
+    <div class="soc-status-group">
+      <!-- Live Real-Time Clock Widget -->
+      <div class="soc-live-clock" id="headerLiveClock">
+        <span class="live-pulse-dot"></span>
+        <span class="clock-time" id="clockTimeVal">--:--:-- IST</span>
+        <span class="clock-date" id="clockDateVal">--</span>
+      </div>
+
+      <div class="soc-status-badge">
+        <span class="status-dot healthy"></span>
+        <span id="headerSyncStatus">Live SCADA (50.002 Hz)</span>
+      </div>
+
+      <button class="btn btn-secondary btn-sm" id="btnHeaderRefresh" onclick="window.app.refreshScadaFeed()" title="Refresh live SCADA data telemetry">
+        <i class="fa-solid fa-rotate" id="headerRefreshIcon"></i> Refresh Feed
+      </button>
+
+      <a href="index.html" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.8rem;">
+        <i class="fa-solid fa-arrow-left"></i> Landing Page
+      </a>
+
+      <div class="soc-user-profile">
+        <div class="soc-avatar">NL</div>
+        <div>
+          <div style="font-size:0.82rem; font-weight:700; color:#1c1917;">NLDC Control</div>
+          <div style="font-size:0.7rem; color:var(--text-muted);">Lead Grid Controller</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <div class="soc-layout">
+    <!-- Sidebar -->
+    <aside class="soc-sidebar">
+      <ul class="soc-nav-menu">
+        <li class="soc-nav-category">Monitoring</li>
+        <li>
+          <a href="#" class="soc-nav-item active" data-view="dashboard">
+            <i class="fa-solid fa-gauge-high"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="soc-nav-item" data-view="map">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <span>India Power Grid Map</span>
+            <span class="soc-nav-counter counter-neutral">National</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="soc-nav-item" data-view="threats">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>SCADA DPI Threats</span>
+            <span class="soc-nav-counter counter-danger">3 Active</span>
+          </a>
+        </li>
+
+        <li class="soc-nav-category">Incident &amp; Analysis</li>
+        <li>
+          <a href="#" class="soc-nav-item" data-view="investigation">
+            <i class="fa-solid fa-magnifying-glass-chart"></i>
+            <span>Investigation</span>
+            <span class="soc-nav-counter counter-warning">#INC-1042</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="soc-nav-item" data-view="network">
+            <i class="fa-solid fa-route"></i>
+            <span>Network Analysis</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="soc-nav-item" data-view="simulator">
+            <i class="fa-solid fa-crosshairs" style="color:#b91c1c;"></i>
+            <span>Attack Simulator</span>
+            <span class="soc-nav-counter counter-danger">Lab</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="soc-nav-item" data-view="cascade">
+            <i class="fa-solid fa-diagram-project" style="color:#4f46e5;"></i>
+            <span>Cascade Visualizer</span>
+            <span class="soc-nav-counter" style="background:#e0e7ff; color:#4338ca;">Live</span>
+          </a>
+        </li>
+
+        <li class="soc-nav-category">Infrastructure</li>
+        <li>
+          <a href="#" class="soc-nav-item" data-view="assets">
+            <i class="fa-solid fa-server"></i>
+            <span>Substation Assets</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="soc-sidebar-footer">
+        <div class="dsa-mode-card">
+          <div>
+            <div style="font-size:0.75rem; font-weight:700; color:#1c1917;">Algorithm Engine</div>
+            <div style="font-size:0.68rem; color:var(--text-muted);">DSA Graph Model</div>
+          </div>
+          <button class="btn btn-secondary" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="window.app.showDsaModal('bfs')">
+            <i class="fa-solid fa-code"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main id="socMainViewport" class="soc-viewport">
+      <!-- Dynamic views rendered via app.js -->
+    </main>
+  </div>
+
+  <!-- DSA Details Modal -->
+  <div id="dsaModalBackdrop" class="soc-modal-backdrop" onclick="if(event.target === this) window.app.closeDsaModal()">
+    <div class="soc-modal">
+      <div class="modal-header">
+        <h3 id="modalDsaTitle" style="font-size:1.05rem; color:#1c1917;">Algorithm Architecture</h3>
+        <button class="btn btn-secondary" style="padding:0.25rem 0.5rem;" onclick="window.app.closeDsaModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="modalDsaBody" class="modal-body">
+        <!-- Populated via JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="window.app.closeDsaModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet Interactive Map Engine -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    if (!window.L) {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"><\/script>');
+    }
+  </script>
+
+  <!-- Core Scripts -->
+  <script src="js/data/gridData.js"></script>
+  <script src="js/data/indiaGridData.js"></script>
+  <script src="js/data/threatData.js"></script>
+  <script src="js/engine/graph.js"></script>
+  <script src="js/engine/dsaEngine.js"></script>
+  <script src="js/visualizer/gridCanvas.js"></script>
+  <script src="js/visualizer/indiaMapVisualizer.js"></script>
+  <script src="js/views/dashboardView.js"></script>
+  <script src="js/views/mapView.js"></script>
+  <script src="js/views/threatsView.js"></script>
+  <script src="js/views/investigateView.js"></script>
+  <script src="js/views/networkAnalysisView.js"></script>
+  <script src="js/views/simulatorView.js"></script>
+  <script src="js/views/cascadeView.js"></script>
+  <script src="js/views/assetsView.js"></script>
+  <script src="js/interactions.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

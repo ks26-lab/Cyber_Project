@@ -1,0 +1,1340 @@
+/* ==========================================================================
+   GRIDSEC Warm Editorial Map Styling (Fluid & Scalable)
+   Includes Hierarchical Search (State -> District -> Station -> Transformer)
+   ========================================================================== */
+
+.map-layout-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, clamp(340px, 24vw, 440px));
+  gap: 1rem;
+  height: clamp(580px, calc(100vh - 200px), 1100px);
+  min-height: 560px;
+  width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .map-layout-container {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .map-canvas-card {
+    height: 600px;
+  }
+}
+
+.map-canvas-card {
+  background: #faf9f6;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/* ==========================================================================
+   Hierarchical Search Bar & Autocomplete
+   ========================================================================== */
+
+.map-search-bar-wrapper {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.map-search-input-box {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: #faf9f6;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.45rem 0.75rem;
+  transition: all var(--transition-base);
+}
+
+.map-search-input-box:focus-within {
+  border-color: #1c1917;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(28, 25, 23, 0.08);
+}
+
+.map-search-input-box .search-icon {
+  color: #78716c;
+  font-size: 0.95rem;
+}
+
+.map-search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  color: #1c1917;
+  width: 100%;
+}
+
+.map-search-input::placeholder {
+  color: #a8a29e;
+}
+
+.search-clear-btn {
+  background: transparent;
+  border: none;
+  color: #a8a29e;
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all var(--transition-base);
+}
+
+.search-clear-btn:hover {
+  color: #1c1917;
+  background: #f0eee9;
+}
+
+/* Filter Level Pills - Hidden for clean nominal search bar */
+.map-search-category-pills {
+  display: none !important;
+}
+
+/* Autocomplete Dropdown List */
+.map-search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.search-dropdown-list {
+  padding: 0.4rem 0;
+}
+
+.search-result-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.95rem;
+  border-bottom: 1px solid #f7f6f2;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.search-result-row:last-child {
+  border-bottom: none;
+}
+
+.search-result-row:hover {
+  background: #faf9f6;
+}
+
+.result-icon-col {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: #f0eee9;
+  color: #1c1917;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.result-info-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.result-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #1c1917;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.result-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+}
+
+.badge-state {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-district {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-station {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+}
+
+.badge-transformer {
+  background: #fdf2f8;
+  color: #9d174d;
+  border: 1px solid #fbcfe8;
+}
+
+.badge-pincode {
+  background: #f5f5f4;
+  color: #292524;
+  border: 1px solid #d6d3d1;
+}
+
+.result-subtext {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.result-action-col {
+  color: #a8a29e;
+  font-size: 0.75rem;
+}
+
+.search-empty-state {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+/* ==========================================================================
+   Map HUD & Overlays
+   ========================================================================== */
+
+.map-hud-top {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.map-hud-controls {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #ffffff;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+
+.map-filter-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.map-filter-btn.active, .map-filter-btn:hover {
+  background: #1c1917;
+  color: #ffffff;
+}
+
+.map-hud-bottom {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  display: flex;
+  gap: 0.35rem;
+  z-index: 10;
+}
+
+.map-zoom-btn {
+  width: 30px;
+  height: 30px;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.map-zoom-btn:hover {
+  background: #f7f6f2;
+}
+
+/* ==========================================================================
+   Comprehensive Structured Map Legend Card
+   ========================================================================== */
+
+.map-legend-card {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+  max-width: 460px;
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+
+.map-legend-card.collapsed .legend-card-body {
+  display: none;
+}
+
+.map-legend-card.collapsed .legend-collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.legend-card-header {
+  padding: 0.45rem 0.75rem;
+  background: #faf9f6;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.legend-card-header:hover {
+  background: #f0eee9;
+}
+
+.legend-collapse-icon {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.legend-card-body {
+  padding: 0.6rem 0.75rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.legend-section-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 0.3rem;
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.35rem 0.65rem;
+}
+
+.legend-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--text-body);
+  line-height: 1.3;
+}
+
+.legend-symbol {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.legend-symbol.hvdc {
+  background: #1c1917;
+  border: 2px solid #1c1917;
+  box-shadow: 0 0 0 1.5px #f5f5f4;
+}
+
+.legend-symbol.nuclear {
+  background: #dcfce7;
+  border: 2px solid #15803d;
+}
+
+.legend-symbol.thermal {
+  background: #ffedd5;
+  border: 2px solid #c2410c;
+}
+
+.legend-symbol.hydro {
+  background: #ccfbf1;
+  border: 2px solid #0d9488;
+}
+
+.legend-symbol.solar {
+  background: #fef3c7;
+  border: 2px solid #d97706;
+}
+
+.legend-symbol.substation {
+  background: #f5f5f4;
+  border: 2px solid #44403c;
+}
+
+@media (max-width: 768px) {
+  .map-legend-card {
+    max-width: calc(100% - 1.5rem);
+    left: 0.75rem;
+    right: 0.75rem;
+  }
+  .legend-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+#socGridCanvas,
+#indiaGridCanvas {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  display: block;
+}
+
+#socGridCanvas:active,
+#indiaGridCanvas:active {
+  cursor: grabbing;
+}
+
+/* ==========================================================================
+   Node & Transformer Inspector Sidebar
+   ========================================================================== */
+
+.map-inspector-sidebar {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.inspector-header {
+  padding: 0.75rem 1rem;
+  background: #faf9f6;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Inspector Tabs */
+.inspector-nav-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-subtle);
+  background: #faf9f6;
+}
+
+.insp-tab-btn {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-bottom: 2px solid transparent;
+  transition: all var(--transition-base);
+}
+
+.insp-tab-btn:hover {
+  color: #1c1917;
+}
+
+.insp-tab-btn.active {
+  color: #1c1917;
+  border-bottom-color: #1c1917;
+  background: #ffffff;
+}
+
+.tab-badge {
+  background: #f0eee9;
+  color: #1c1917;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 10px;
+}
+
+.insp-tab-btn.active .tab-badge {
+  background: #1c1917;
+  color: #ffffff;
+}
+
+.inspector-body {
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  flex: 1;
+}
+
+.spec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+  gap: 0.5rem;
+}
+
+.spec-box {
+  background: #faf9f6;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.45rem 0.65rem;
+}
+
+.spec-box .label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.spec-box .val {
+  font-size: 0.88rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 1px;
+}
+
+/* Transformer Level Telemetry Cards */
+.transformers-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.xfmr-summary-banner {
+  background: #fbfaf7;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.xfmr-telemetry-card {
+  background: #faf9f6;
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 0.65rem 0.85rem;
+  transition: all 0.3s ease;
+}
+
+.xfmr-telemetry-card.highlight-pulse {
+  border-color: #166534;
+  box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.2);
+  background: #ffffff;
+}
+
+.xfmr-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.xfmr-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1c1917;
+}
+
+.xfmr-id {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.xfmr-rating {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #166534;
+}
+
+.xfmr-ratio-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-body);
+  margin-bottom: 0.45rem;
+}
+
+.xfmr-load-meter {
+  margin-bottom: 0.5rem;
+}
+
+.load-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.load-bar-track {
+  width: 100%;
+  height: 5px;
+  background: #e7e5e4;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.load-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.xfmr-diag-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.diag-box {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 0.25rem 0.35rem;
+  text-align: center;
+}
+
+.diag-box .d-label {
+  display: block;
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.diag-box .d-val {
+  display: block;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: #1c1917;
+  margin-top: 1px;
+}
+
+/* Custom Leaflet Map Tooltips & Labels */
+.leaflet-tooltip.grid-node-label {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  padding: 2px 6px;
+  font-family: var(--font-sans);
+  pointer-events: none;
+}
+
+.leaflet-tooltip.grid-node-label::before {
+  display: none;
+}
+
+.leaflet-tooltip.grid-corridor-tooltip {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px 8px;
+}
+
+.leaflet-container {
+  background: #f7f6f2 !important;
+  font-family: var(--font-sans);
+}
+
+/* ==========================================================================
+   AI Grid Telemetry & Protocol Summary Card
+   ========================================================================== */
+.ai-summary-card {
+  background: #fdfdfc;
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid #166534;
+  border-radius: 6px;
+  padding: 0.75rem 0.85rem;
+  margin-top: 0.65rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.ai-summary-card.alert-crit {
+  border-left-color: #b91c1c;
+  background: #fffafa;
+}
+
+.ai-summary-card.alert-warn {
+  border-left-color: #d97706;
+  background: #fffdf5;
+}
+
+.ai-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.ai-summary-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1c1917;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ai-summary-body {
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--text-body);
+}
+
+.ai-summary-bullets {
+  margin: 0.35rem 0 0;
+  padding-left: 1.15rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.ai-summary-bullets li {
+  margin-bottom: 0.2rem;
+}
+
+.ai-summary-bullets strong {
+  color: #1c1917;
+}
+
+/* ==========================================================================
+   Operator & Energy Firm Transmission Tracing Bar
+   ========================================================================== */
+/* ==========================================================================
+   Operator & Energy Firm Transmission Tracing Bar (Minimal Hover Popover)
+   ========================================================================== */
+.operator-trace-bar {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  z-index: 50;
+}
+
+.operator-trace-bar:hover {
+  border-color: #d6d3d1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.operator-trace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.operator-trace-title {
+  font-size: 0.8rem;
+  color: #1c1917;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.operator-trace-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.operator-trace-hint i {
+  transition: transform var(--transition-base);
+  font-size: 0.7rem;
+}
+
+.operator-trace-bar:hover .operator-trace-hint i {
+  transform: rotate(180deg);
+}
+
+/* Hidden by default, smoothly pop open on hover or focus */
+.operator-trace-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+  z-index: 1050;
+}
+
+.operator-trace-bar:hover .operator-trace-dropdown,
+.operator-trace-bar:focus-within .operator-trace-dropdown {
+  display: block;
+}
+
+.operator-pills-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.op-group-divider {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #a8a29e;
+  margin: 0 0.25rem 0 0.4rem;
+  letter-spacing: 0.04em;
+}
+
+.operator-pill-btn {
+  padding: 0.22rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+  background: #faf9f6;
+  color: #44403c;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all var(--transition-base);
+}
+
+.operator-pill-btn:hover {
+  background: #f0eee9;
+  color: #1c1917;
+  border-color: #a8a29e;
+}
+
+.operator-pill-btn.active {
+  background: #1c1917;
+  color: #ffffff;
+  border-color: #1c1917;
+}
+
+.operator-pill-btn.active .op-dot {
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.op-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.op-dot.pgcil { background: #166534; }
+.op-dot.ntpc { background: #0f766e; }
+.op-dot.npcil { background: #0369a1; }
+.op-dot.nhpc { background: #1e40af; }
+.op-dot.bbmb { background: #4338ca; }
+.op-dot.adani { background: #c2410c; }
+.op-dot.tata { background: #b45309; }
+.op-dot.sterlite { background: #d97706; }
+.op-dot.renew { background: #ca8a04; }
+.op-dot.jsw { background: #ea580c; }
+.op-dot.transcos { background: #4f46e5; }
+
+/* Active Operator Footprint Card */
+.active-operator-card {
+  background: #fdfdfc;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.operator-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.operator-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.5rem;
+}
+
+.op-stat-box {
+  background: #faf9f6;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.45rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.op-stat-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: #78716c;
+  font-weight: 600;
+}
+
+.op-stat-val {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1c1917;
+}
+
+/* Category Badges */
+.badge-operator {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.badge-gold {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #ffedd5;
+}
+
+.badge-blue {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #dbeafe;
+}
+
+/* ==========================================================================
+   Pincode Power Transfer & Geographic Transformer Inspection Modal & Overlays
+   ========================================================================== */
+
+.pincode-quick-btn {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all var(--transition-base);
+  margin-right: 0.5rem;
+}
+
+.pincode-quick-btn:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  transform: translateY(-1px);
+}
+
+.pincode-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(28, 25, 23, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeInModal 0.25s ease;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.pincode-modal-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  width: 100%;
+  max-width: 960px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.pincode-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 1rem;
+}
+
+.pincode-modal-close-btn {
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #78716c;
+  transition: all var(--transition-base);
+}
+
+.pincode-modal-close-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+/* Transformation Flow Strip */
+.pincode-flow-summary-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #faf9f6;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.pincode-flow-stage {
+  flex: 1;
+  min-width: 160px;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 0.65rem 0.85rem;
+}
+
+.pincode-flow-stage.active {
+  border-color: #166534;
+  background: #f0fdf4;
+  box-shadow: 0 0 0 1px #166534;
+}
+
+.stage-tag {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #78716c;
+  margin-bottom: 2px;
+}
+
+.stage-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.stage-sub {
+  font-size: 0.72rem;
+  color: #78716c;
+}
+
+.flow-arrow-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #a8a29e;
+  font-size: 1rem;
+}
+
+/* KPI Bar */
+.pincode-kpi-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1.25rem;
+}
+
+.pincode-kpi-item {
+  background: #faf9f6;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pk-label {
+  font-size: 0.68rem;
+  color: #78716c;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.pk-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1c1917;
+}
+
+/* Transformer Bays Grid */
+.pincode-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.pincode-xfmr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.pincode-xfmr-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.85rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all var(--transition-base);
+}
+
+.pincode-xfmr-card:hover {
+  border-color: #166534;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.pincode-xfmr-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.65rem;
+}
+
+.pincode-xfmr-voltage-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #faf9f6;
+  border: 1px solid #f0eee9;
+  border-radius: 4px;
+  padding: 0.45rem 0.65rem;
+}
+
+.v-step {
+  display: flex;
+  flex-direction: column;
+}
+
+.v-label {
+  font-size: 0.62rem;
+  color: #78716c;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.v-val {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1c1917;
+}
+
+.v-arrow {
+  color: #a8a29e;
+  font-size: 0.75rem;
+}
+
+.pincode-xfmr-diag-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 0.65rem;
+}
+
+.diag-tile {
+  background: #faf9f6;
+  border: 1px solid #f0eee9;
+  border-radius: 3px;
+  padding: 0.35rem 0.45rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.dt-label {
+  font-size: 0.6rem;
+  color: #78716c;
+  text-transform: uppercase;
+}
+
+.dt-val {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1c1917;
+}
+
+/* Corridors Box */
+.pincode-corridor-box {
+  background: #faf9f6;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
+.pincode-corridor-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.65rem;
+}
+
+.pincode-corridor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.pincode-corridor-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.45rem 0.65rem;
+}
+
+/* Map Overlays */
+.xfmr-map-bubble {
+  background: #ffffff;
+  border: 2px solid #166534;
+  border-radius: 5px;
+  padding: 3px 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  font-family: Inter, sans-serif;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.xfmr-map-bubble:hover {
+  transform: scale(1.08);
+}
+
+.xfmr-map-bubble-header {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #1c1917;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.xfmr-map-bubble-body {
+  font-size: 8.5px;
+  color: #57534e;
+  margin-top: 1px;
+}
+
+.xfmr-map-load-bar {
+  height: 3.5px;
+  background: #e7e5e4;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.xfmr-map-load-fill {
+  height: 100%;
+}
+
+.pincode-radar-pulse {
+  animation: radarPulse 2.5s infinite ease-out;
+}
+
+@keyframes radarPulse {
+  0% { stroke-opacity: 0.8; stroke-width: 2px; }
+  50% { stroke-opacity: 0.4; stroke-width: 4px; }
+  100% { stroke-opacity: 0.8; stroke-width: 2px; }
+}
+
+
