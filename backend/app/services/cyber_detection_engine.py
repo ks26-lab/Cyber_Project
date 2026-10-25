@@ -15,9 +15,12 @@ Implements the end-to-end 10-stage cyber-physical detection pipeline:
 
 import uuid
 import time
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional, Tuple, Union
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger("gridsec.cyber_detection")
 
 from app.models.asset import Asset, TransformerBay
 from app.models.transmission import TransmissionLine

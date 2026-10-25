@@ -101,9 +101,9 @@ def get_ieee30_benchmark_network() -> Dict[str, Any]:
         ("GEN-1", "BUS-1", "Unit 1 Steam Turbine (Slack Generator)", "THERMAL", 0.0, 250.0, -20.0, 150.0, 0.0, 1.060),
         ("GEN-2", "BUS-2", "Unit 2 Steam Turbine (Dispatched PV)", "THERMAL", 0.0, 80.0, -40.0, 50.0, 40.0, 1.043),
         ("GEN-5", "BUS-5", "Unit 5 Hydro Turbine (Dispatched PV)", "HYDRO", 0.0, 50.0, -40.0, 40.0, 24.2, 1.010),
-        ("GEN-8", "BUS-8", "Unit 8 Thermal Unit (Dispatched PV)", "THERMAL", 0.0, 55.0, -10.0, 40.0, 35.0, 1.010),
-        ("GEN-11", "BUS-11", "Unit 11 Synchronous Condenser", "HYDRO", 0.0, 30.0, -6.0, 24.0, 0.0, 1.082),
-        ("GEN-13", "BUS-13", "Unit 13 Synchronous Condenser", "HYDRO", 0.0, 40.0, -6.0, 24.0, 0.0, 1.071),
+        ("GEN-8", "BUS-8", "Unit 8 Thermal Unit (Dispatched PV)", "THERMAL", 0.0, 55.0, -20.0, 60.0, 35.0, 1.035),
+        ("GEN-11", "BUS-11", "Unit 11 Synchronous Condenser", "HYDRO", 0.0, 30.0, -15.0, 45.0, 0.0, 1.068),
+        ("GEN-13", "BUS-13", "Unit 13 Synchronous Condenser", "HYDRO", 0.0, 40.0, -15.0, 45.0, 0.0, 1.066),
     ]
 
     generators = [

@@ -1,0 +1,62 @@
+# Python environments & caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.egg-info/
+
+# Environment variables & secrets
+.env
+backend/.env
+apps/web/.env.local
+
+# Node / Next.js
+node_modules/
+apps/web/node_modules/
+apps/web/.next/
+apps/web/out/
+apps/web/build/
+.turbo/
+
+# Playwright & test artifacts
+playwright-report/
+test-results/
+blob-report/
+
+# Local SQLite runtime databases (schema & seeds regenerate automatically)
+backend/gridsec.db-journal
+backend/gridsec.db-wal
+backend/gridsec.db-shm
+
+# OS files
+.DS_Store
+Thumbs.db
+
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Next.js and Node
+node_modules/
+.next/
+.env.local
+
+# macOS
+.DS_Store
+*.tsbuildinfo

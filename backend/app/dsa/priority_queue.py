@@ -55,3 +55,69 @@ class IncidentPriorityQueue:
         for inc in incidents_list:
             pq.push(inc)
         return pq.get_all_sorted()
+
+
+class MinHeap:
+    """Binary Min-Heap for Dijkstra / A* Shortest-Path Priority Queues."""
+
+    def __init__(self) -> None:
+        self._heap: List[ Any ] = []
+        self._counter: int = 0
+
+    def push(self, priority: float, key: str, payload: Optional[Dict[str, Any]] = None) -> None:
+        self._counter += 1
+        heapq.heappush(self._heap, (float(priority), self._counter, key, payload or {}))
+
+    def pop(self) -> Optional[Any]:
+        if not self._heap:
+            return None
+        priority, _, key, payload = heapq.heappop(self._heap)
+        return priority, key, payload
+
+    def is_empty(self) -> bool:
+        return len(self._heap) == 0
+
+    def __len__(self) -> int:
+        return len(self._heap)
+
+    def __bool__(self) -> bool:
+        return bool(self._heap)
+
+
+class MaxHeap:
+    """Binary Max-Heap for Critical Facility & Emergency Triage."""
+
+    def __init__(self) -> None:
+        self._heap: List[Any] = []
+        self._counter: int = 0
+
+    def push(self, priority: float, key: str, payload: Optional[Dict[str, Any]] = None) -> None:
+        self._counter += 1
+        heapq.heappush(self._heap, (-float(priority), self._counter, key, payload or {}))
+
+    def pop(self) -> Optional[Any]:
+        if not self._heap:
+            return None
+        neg_p, _, key, payload = heapq.heappop(self._heap)
+        return -neg_p, key, payload
+
+    def is_empty(self) -> bool:
+        return len(self._heap) == 0
+
+    def get_all_sorted(self) -> List[Dict[str, Any]]:
+        temp = list(self._heap)
+        out: List[Dict[str, Any]] = []
+        rank = 1
+        while temp:
+            neg_p, _, key, payload = heapq.heappop(temp)
+            item = {"rank": rank, "id": key, "score": round(-neg_p, 3), **(payload or {})}
+            out.append(item)
+            rank += 1
+        return out
+
+    def __len__(self) -> int:
+        return len(self._heap)
+
+    def __bool__(self) -> bool:
+        return bool(self._heap)
+

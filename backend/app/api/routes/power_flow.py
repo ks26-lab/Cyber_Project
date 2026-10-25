@@ -42,14 +42,26 @@ def get_power_flow_status() -> Dict[str, Any]:
 def list_available_networks() -> List[Dict[str, str]]:
     """
     Lists electrical network topologies available for simulation.
-    Separates synthetic validation benchmarks from national reference networks.
+    Separates distribution feeders, transmission benchmarks, and national reference networks.
     """
     return [
         {
-            "network_id": "TEST_NETWORK",
-            "name": "4-Bus Benchmark Test Network",
-            "category": "SYNTHETIC_VALIDATION",
-            "description": "Clean 4-bus validation test system (Slack Gen -> 765kV Lines -> Step-Down ICTs -> 400kV Load)"
+            "network_id": "TRAINING_FEEDER",
+            "name": "12-Bus Smart City Distribution Feeder (33/11 kV)",
+            "category": "DISTRIBUTION_BENCHMARK",
+            "description": "12-bus urban distribution feeder with Hospital, Water Treatment, Control Center, University, Residential, Industrial, Solar PV, BESS & 4 NO Tie Switches"
+        },
+        {
+            "network_id": "IEEE_33_DISTRIBUTION",
+            "name": "IEEE 33-Bus Radial Distribution System (Baran & Wu 1989)",
+            "category": "BENCHMARK_STANDARD",
+            "description": "Standard 12.66 kV 33-bus radial distribution feeder with 32 sectionalizing branches, 5 NO tie switches, and critical facility extensions"
+        },
+        {
+            "network_id": "IEEE_30",
+            "name": "IEEE 30-Bus Transmission Benchmark System",
+            "category": "BENCHMARK_STANDARD",
+            "description": "Standard 30-bus MATPOWER/AEP benchmark system (6 generators, 21 loads, 37 lines, 4 OLTC transformers)"
         },
         {
             "network_id": "INDIA_GRID_59",
@@ -58,10 +70,10 @@ def list_available_networks() -> List[Dict[str, str]]:
             "description": "59 bulk substations/power plants with 54 high-voltage transmission corridors & 85 transformer bays"
         },
         {
-            "network_id": "IEEE_30",
-            "name": "IEEE 30-Bus Transmission Benchmark System",
-            "category": "BENCHMARK_STANDARD",
-            "description": "Standard 30-bus MATPOWER/AEP benchmark system (6 generators, 21 loads, 37 lines, 4 OLTC transformers)"
+            "network_id": "TEST_NETWORK",
+            "name": "4-Bus Benchmark Test Network",
+            "category": "SYNTHETIC_VALIDATION",
+            "description": "Clean 4-bus validation test system (Slack Gen -> 765kV Lines -> Step-Down ICTs -> 400kV Load)"
         }
     ]
 

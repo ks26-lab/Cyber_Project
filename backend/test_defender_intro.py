@@ -77,21 +77,21 @@ class TestGridDefenderIntro(unittest.TestCase):
 
         # Scene 1
         self.assertIn("Regional Power Systems", content)
-        self.assertIn("Northern, Western, Southern, Eastern and North-Eastern", content) or self.assertIn("NR", content)
+        self.assertTrue("Northern, Western, Southern, Eastern and North-Eastern" in content or "NR" in content)
         self.assertIn("Hospitals", content)
         self.assertIn("Railways", content)
 
         # Scene 2
         self.assertIn("Regional Interconnection", content)
         self.assertIn("HVDC", content)
-        self.assertIn("Transmission Capacity Limit", content) or self.assertIn("transmission capacity", content)
+        self.assertTrue("Transmission Capacity Limit" in content or "transmission capacity" in content)
 
         # Scene 3
         self.assertIn("Unified National Synchronous Grid", content)
         self.assertIn("December 2013", content)
         self.assertIn("Raichur", content)
         self.assertIn("Solapur", content)
-        self.assertIn("50.00", content) or self.assertIn("50.000 Hz", content)
+        self.assertTrue("50.00" in content or "50.000 Hz" in content)
         self.assertIn("One Nation, One Grid, One Frequency", content)
 
         # Scene 4

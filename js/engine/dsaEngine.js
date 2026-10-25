@@ -376,6 +376,7 @@ class DsaEngine {
 
     const visited = new Set([sourceId]);
     const queue = [{ id: sourceId, hop: 0 }];
+    let queueHead = 0; // O(1) pointer-based FIFO dequeue
     const visitedOrder = [sourceId];
     const levels = { [sourceId]: 0 };
     const queueSnapshots = [];
@@ -385,14 +386,14 @@ class DsaEngine {
     queueSnapshots.push({
       step: 0,
       activeNode: sourceId,
-      queue: queue.map(q => q.id),
+      queue: queue.slice(queueHead).map(q => q.id),
       visitedCount: visited.size
     });
 
     let step = 0;
-    while (queue.length > 0) {
+    while (queueHead < queue.length) {
       opCount++;
-      const current = queue.shift();
+      const current = queue[queueHead++];
       const u = current.id;
       const hop = current.hop;
 
@@ -425,7 +426,7 @@ class DsaEngine {
             queueSnapshots.push({
               step,
               activeNode: v,
-              queue: queue.map(q => q.id),
+              queue: queue.slice(queueHead).map(q => q.id),
               visitedCount: visited.size
             });
           }
