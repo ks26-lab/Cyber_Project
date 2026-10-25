@@ -30,8 +30,8 @@ from app.api.routes.simulation import router as simulation_router
 from app.api.routes.power_flow import router as power_flow_router
 from app.api.routes.aegis import router as aegis_router
 from app.api.routes.cascades import router as cascades_router
-from app.api.routes.sandbox_simulation import router as sandbox_simulation_router
 from app.api.routes.cyber import router as cyber_router
+from app.api.routes.scheduling import router as scheduling_router
 
 logger = logging.getLogger("gridsec.main")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -121,8 +121,8 @@ app.include_router(simulation_router, prefix="/api")
 app.include_router(power_flow_router, prefix="/api")
 app.include_router(aegis_router, prefix="/api")
 app.include_router(cascades_router, prefix="/api")
-app.include_router(sandbox_simulation_router, prefix="/api")
 app.include_router(cyber_router, prefix="/api")
+app.include_router(scheduling_router, prefix="/api")
 
 
 @app.get("/api/health", summary="Health Check and Database Status")
@@ -135,6 +135,47 @@ def health_check() -> Dict[str, Any]:
         "graph_nodes_loaded": len(grid_service.graph.nodes),
         "graph_edges_loaded": len(grid_service.graph.edges)
     }
+
+
+# Character Asset Servicing (Grid Operator & Hacker)
+from fastapi.responses import FileResponse, Response
+import shutil
+from pathlib import Path
+
+OPERATOR_IMG_PATH = Path(r"C:\Users\karti\.gemini\antigravity-ide\brain\d2622f27-4d61-406f-933f-22fef3b2aff9\.user_uploaded\media_1792763553226.png")
+HACKER_IMG_PATH = Path(r"C:\Users\karti\.gemini\antigravity-ide\brain\d2622f27-4d61-406f-933f-22fef3b2aff9\.user_uploaded\media_1792763583932.png")
+
+def _sync_character_images():
+    try:
+        dest_dir = Path(__file__).resolve().parent.parent.parent / "assets" / "images"
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        if OPERATOR_IMG_PATH.exists() and not (dest_dir / "grid_operator.png").exists():
+            shutil.copy(OPERATOR_IMG_PATH, dest_dir / "grid_operator.png")
+        if HACKER_IMG_PATH.exists() and not (dest_dir / "hacker.png").exists():
+            shutil.copy(HACKER_IMG_PATH, dest_dir / "hacker.png")
+    except Exception as e:
+        logger.warning(f"Could not auto-sync character assets to assets/images: {e}")
+
+_sync_character_images()
+
+@app.get("/api/character-image/{character_id}", summary="Serve Character Portrait Image")
+def get_character_image(character_id: str):
+    cid = character_id.lower()
+    dest_dir = Path(__file__).resolve().parent.parent.parent / "assets" / "images"
+    
+    if cid in ["operator", "grid_operator", "mentor"]:
+        local_copy = dest_dir / "grid_operator.png"
+        if local_copy.exists():
+            return FileResponse(str(local_copy), media_type="image/png")
+        if OPERATOR_IMG_PATH.exists():
+            return FileResponse(str(OPERATOR_IMG_PATH), media_type="image/png")
+    elif cid in ["hacker", "antagonist"]:
+        local_copy = dest_dir / "hacker.png"
+        if local_copy.exists():
+            return FileResponse(str(local_copy), media_type="image/png")
+        if HACKER_IMG_PATH.exists():
+            return FileResponse(str(HACKER_IMG_PATH), media_type="image/png")
+    return Response(status_code=404, content="Character image not found")
 
 
 @app.websocket("/ws/grid")

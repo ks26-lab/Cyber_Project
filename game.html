@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GRIDSEC: Grid Defender | Cyber-Physical Power Operations</title>
+
+  <!-- Typography: Plus Jakarta Sans, Inter, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Core Stylesheets -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/views.css">
+  <link rel="stylesheet" href="css/game.css">
+</head>
+<body class="game-body">
+
+  <div id="gameApp">
+
+    <!-- ======================================================================
+         TITLE SCREEN
+         ====================================================================== -->
+    <div id="titleScreen" class="screen-title">
+      <div class="title-grid-bg"></div>
+      
+      <div class="title-content">
+        <div class="title-badge">
+          <i class="fa-solid fa-shield-halved"></i> Regional Grid Cyber Defence Simulator
+        </div>
+
+        <div class="title-logo-icon">
+          <i class="fa-solid fa-bolt-lightning"></i>
+        </div>
+
+        <h1 class="title-heading">GRIDSEC: GRID DEFENDER</h1>
+        <p class="title-tagline">
+          Defend regional power transmission against unauthorized breaker trips, False Data Injection Attacks, and cascading blackouts using real-world Data Structures and Algorithms.
+        </p>
+
+        <div class="title-menu">
+          <button class="btn-game-primary" onclick="window.GameShell.startNewGame()">
+            <i class="fa-solid fa-play"></i> Start Campaign
+          </button>
+          <button class="btn-game-secondary" onclick="window.GameShell.resumeGame()">
+            <i class="fa-solid fa-rotate-right"></i> Resume Mission
+          </button>
+          <button class="btn-game-secondary" onclick="window.GameShell.openMissionSelect()">
+            <i class="fa-solid fa-map"></i> Select Mission
+          </button>
+          <button class="btn-game-secondary" onclick="window.GameShell.openHowToPlay()">
+            <i class="fa-solid fa-graduation-cap"></i> How to Play
+          </button>
+          <button class="btn-game-secondary" onclick="window.GameShell.openSettings()">
+            <i class="fa-solid fa-gear"></i> Settings
+          </button>
+          <button class="btn-game-secondary" onclick="window.GameShell.openGlossary()">
+            <i class="fa-solid fa-book"></i> Glossary &amp; Terms
+          </button>
+        </div>
+
+        <div class="title-footer">
+          GRIDSEC Operational Console · Zero Setup · Offline Capable
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         MISSION SELECT SCREEN
+         ====================================================================== -->
+    <div id="missionSelectScreen" class="screen-mission-select" style="display:none;">
+      <header class="mission-select-header">
+        <div class="mission-select-title">
+          <h2>Mission Control Operations</h2>
+          <p>Choose a regional sector to investigate and defend.</p>
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+          <button class="btn-game-secondary" onclick="window.GameShell.showScreen('title')">
+            <i class="fa-solid fa-arrow-left"></i> Main Menu
+          </button>
+        </div>
+      </header>
+
+      <div class="mission-path-container" id="missionCardsGrid">
+        <!-- Injected dynamically by GameShell.updateMissionSelectGrid() -->
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         GAMEPLAY SCREEN
+         ====================================================================== -->
+    <div id="gameScreen" style="display:none; flex-direction:column; width:100%; height:100%;">
+      <!-- Real-Time Attack Escalation Banner -->
+      <div id="rtAttackBanner" class="rt-attack-banner">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span id="rtAttackStageLabel" style="font-weight:700; font-family:var(--font-mono);">STAGE 1: RECONNAISSANCE</span>
+          <span id="rtAttackTarget" style="font-size:0.75rem; opacity:0.85;"></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <span style="font-size:0.75rem;">Escalation in:</span>
+          <strong id="rtAttackTimer" style="font-family:var(--font-mono); color:#fff; font-size:0.9rem;">20s</strong>
+        </div>
+        <div id="rtAttackProgressBar" class="rt-progress-bar" style="width:100%;"></div>
+      </div>
+
+      <!-- Top HUD Bar -->
+      <header class="game-hud">
+        <div class="hud-left">
+          <div class="hud-brand" onclick="window.GameShell.openMissionSelect()" title="Back to Mission Select">
+            <i class="fa-solid fa-bolt"></i> GRIDSEC
+          </div>
+          <span class="hud-mission-badge" id="hudMissionTitle">LEVEL 1: Quiet Night</span>
+        </div>
+
+        <div class="hud-center">
+          <div class="hud-stat">
+            <span class="hud-stat-label">Budget:</span>
+            <span class="hud-stat-value dp-gauge" id="hudDpVal">100 DP</span>
+          </div>
+          <div class="hud-stat">
+            <span class="hud-stat-label">Grid Health:</span>
+            <span class="hud-stat-value" id="hudHealthVal" style="color:#10b981;">100%</span>
+          </div>
+          <div class="hud-stat">
+            <span class="hud-stat-label">Score:</span>
+            <span class="hud-stat-value" id="hudScoreVal" style="color:#38bdf8;">0 pts</span>
+          </div>
+        </div>
+
+        <div class="hud-right">
+          <button class="hud-btn sound-toggle-btn" onclick="window.SoundEngine.toggleMute()" title="Toggle Audio">
+            <i class="fa-solid fa-volume-high"></i>
+          </button>
+          <button class="hud-btn" onclick="window.GameShell.openGlossary()" title="DSA & Grid Glossary (?)">
+            <i class="fa-solid fa-book"></i>
+          </button>
+          <button class="hud-btn" onclick="window.GameShell.openSettings()" title="Settings">
+            <i class="fa-solid fa-gear"></i>
+          </button>
+          <button class="hud-btn" onclick="window.GameShell.togglePause()" title="Pause Game (Esc)">
+            <i class="fa-solid fa-pause"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Mount point for Story Engine Speech Bubble -->
+      <div id="storyDialogueMount"></div>
+
+      <!-- Mount point for DefenderView DOM -->
+      <div id="defenderGameMount" style="flex-grow:1; display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden;"></div>
+    </div>
+
+  </div>
+
+  <!-- ======================================================================
+       PAUSE MODAL
+       ====================================================================== -->
+  <div id="pauseModal" class="game-modal-overlay" style="display:none;">
+    <div class="game-modal-card">
+      <div class="game-modal-header">
+        <h3><i class="fa-solid fa-pause"></i> Simulation Paused</h3>
+      </div>
+      <div class="game-modal-body" style="text-align:center; padding:2rem;">
+        <p style="margin-bottom:1.5rem; color:var(--text-muted);">
+          Grid physics and real-time attack progression are currently halted.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:0.75rem; max-width:280px; margin:0 auto;">
+          <button class="btn-game-primary" onclick="window.GameShell.togglePause()">
+            <i class="fa-solid fa-play"></i> Resume Simulation
+          </button>
+          <button class="btn-game-secondary" onclick="if(window.DefenderView) window.DefenderView.resetLevel(); window.GameShell.togglePause();">
+            <i class="fa-solid fa-rotate-left"></i> Restart Level
+          </button>
+          <button class="btn-game-secondary" onclick="window.GameShell.openSettings()">
+            <i class="fa-solid fa-gear"></i> Settings
+          </button>
+          <button class="btn-game-secondary" onclick="window.GameShell.closeModals(); window.GameShell.showScreen('missionSelect');">
+            <i class="fa-solid fa-door-open"></i> Quit to Mission Select
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       SETTINGS MODAL
+       ====================================================================== -->
+  <div id="settingsModal" class="game-modal-overlay" style="display:none;">
+    <div class="game-modal-card">
+      <div class="game-modal-header">
+        <h3><i class="fa-solid fa-gear"></i> Settings &amp; Accessibility</h3>
+        <button class="hud-btn" onclick="window.GameShell.closeModals()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="game-modal-body">
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-title">Sound Effects</span>
+            <span class="setting-desc">Synthesized audio cues for trips, alarms, and scans</span>
+          </div>
+          <button class="btn-game-secondary sound-toggle-btn" onclick="window.SoundEngine.toggleMute()" style="padding:0.4rem 0.8rem;">
+            <i class="fa-solid fa-volume-high"></i>
+          </button>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-title">Text Size</span>
+            <span class="setting-desc">Adjust UI readability scale</span>
+          </div>
+          <select class="game-select" id="settingTextSize" onchange="window.GameStorage.saveSettings({ ...window.GameStorage.loadSettings(), textSize: this.value })">
+            <option value="small">Compact</option>
+            <option value="medium" selected>Standard</option>
+            <option value="large">Enlarged</option>
+          </select>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-title">Colour-Blind Palette</span>
+            <span class="setting-desc">Accessible line load and threat colours</span>
+          </div>
+          <select class="game-select" id="settingColorBlind" onchange="window.GameStorage.saveSettings({ ...window.GameStorage.loadSettings(), colorBlindMode: this.value })">
+            <option value="none" selected>Default (Tricolor)</option>
+            <option value="deuteranopia">Deuteranopia (Red-Green)</option>
+            <option value="protanopia">Protanopia</option>
+            <option value="high-contrast">High Contrast Monochrome</option>
+          </select>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-title">Game Difficulty</span>
+            <span class="setting-desc">Easy (+20% DP, slower attacks), Normal, Hard (-25% time, noise ON)</span>
+          </div>
+          <select class="game-select" id="settingDifficulty" onchange="if(confirm('Changing difficulty resets current level. Proceed?')){ window.GameStorage.saveSettings({ ...window.GameStorage.loadSettings(), difficulty: this.value }); if(window.DefenderView && window.DefenderView.resetLevel) window.DefenderView.resetLevel(); }">
+            <option value="easy">Easy (Assisted)</option>
+            <option value="normal" selected>Normal (Standard)</option>
+            <option value="hard">Hard (Defcon 1)</option>
+          </select>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-title">Reduced Motion</span>
+            <span class="setting-desc">Disable dash flow and blinking animations</span>
+          </div>
+          <input type="checkbox" class="game-checkbox" id="settingReducedMotion" onchange="window.GameStorage.saveSettings({ ...window.GameStorage.loadSettings(), reducedMotion: this.checked })">
+        </div>
+
+        <div class="setting-row" style="border-bottom:none; margin-top:1rem;">
+          <div class="setting-label">
+            <span class="setting-title" style="color:var(--accent-rose);">Reset Campaign Progress</span>
+            <span class="setting-desc">Clear unlocked levels, stars, and high scores</span>
+          </div>
+          <button class="btn-game-secondary" style="border-color:var(--accent-rose); color:var(--accent-rose);" onclick="if(confirm('Reset all saved mission progress?')){ window.GameStorage.resetProgress(); window.GameShell.updateMissionSelectGrid(); alert('Progress reset.'); }">
+            Reset Data
+          </button>
+        </div>
+      </div>
+      <div class="game-modal-footer">
+        <button class="btn-game-primary" onclick="window.GameShell.closeModals()">Save &amp; Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       GLOSSARY MODAL
+       ====================================================================== -->
+  <div id="glossaryModal" class="game-modal-overlay" style="display:none;">
+    <div class="game-modal-card" style="max-width:680px;">
+      <div class="game-modal-header">
+        <h3><i class="fa-solid fa-book"></i> Operations &amp; DSA Glossary</h3>
+        <button class="hud-btn" onclick="window.GameShell.closeModals()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div style="padding:1rem 1.5rem 0 1.5rem;">
+        <input type="text" placeholder="Search terms (e.g. Tarjan, FDIA, Islanding)..." oninput="window.GameShell.renderGlossary(this.value)" style="width:100%; padding:0.6rem 1rem; background:var(--bg-card); border:1px solid var(--border-dim); border-radius:6px; color:#fff; font-family:var(--font-body); font-size:0.85rem; outline:none;" />
+      </div>
+      <div class="game-modal-body" id="glossaryItemsList" style="max-height:480px;">
+        <!-- Injected via JS -->
+      </div>
+      <div class="game-modal-footer">
+        <button class="btn-game-primary" onclick="window.GameShell.closeModals()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       HOW TO PLAY MODAL
+       ====================================================================== -->
+  <div id="howToPlayModal" class="game-modal-overlay" style="display:none;">
+    <div class="game-modal-card" style="max-width:640px;">
+      <div class="game-modal-header">
+        <h3><i class="fa-solid fa-graduation-cap"></i> How to Play GRIDSEC</h3>
+        <button class="hud-btn" onclick="window.GameShell.closeModals()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="game-modal-body" style="font-size:0.88rem; line-height:1.6;">
+        <h4 style="color:#fff; margin-bottom:0.5rem;">1. Follow the 6-Phase Decision Loop</h4>
+        <p style="margin-bottom:1rem;">
+          Real control rooms follow a strict cycle: <strong>Observe</strong> telemetry &rarr; <strong>Investigate</strong> using graph algorithms &rarr; <strong>Decide</strong> the safest intervention &rarr; <strong>Act</strong> &rarr; <strong>Evaluate</strong> physical response &rarr; <strong>Continue</strong>.
+        </p>
+
+        <h4 style="color:#fff; margin-bottom:0.5rem;">2. Manage your Defence Points (DP)</h4>
+        <p style="margin-bottom:1rem;">
+          Running algorithms (BFS, Dijkstra, Tarjan) costs <strong>0 DP</strong>. Taking irreversible physical actions (Isolating lines, Reclosing breakers, Shedding load) costs DP. Do not act blindly!
+        </p>
+
+        <h4 style="color:#fff; margin-bottom:0.5rem;">3. Watch for False Data Injection Attacks (FDIA)</h4>
+        <p style="margin-bottom:1rem;">
+          Adversaries may spoof sensor values to make healthy lines look overloaded. Always run <strong>AC Feasibility &amp; Chi-Square Residual Tests</strong> before tripping breakers!
+        </p>
+
+        <h4 style="color:#fff; margin-bottom:0.5rem;">4. Real-Time Attacks</h4>
+        <p>
+          Scripted attacks advance across 4 stages. An amber badge gives you 20 seconds to neutralize the intrusion before breakers trip automatically.
+        </p>
+      </div>
+      <div class="game-modal-footer">
+        <button class="btn-game-primary" onclick="window.GameShell.closeModals()">Understood</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       DEBRIEF & SCORECARD MODAL
+       ====================================================================== -->
+  <div id="debriefModal" class="game-modal-overlay" style="display:none;">
+    <div class="game-modal-card" style="max-width:560px;">
+      <div class="game-modal-header" style="background:#0f2038;">
+        <h3><i class="fa-solid fa-clipboard-check" style="color:var(--accent-cyan);"></i> Mission Debrief</h3>
+      </div>
+      <div class="game-modal-body" style="text-align:center;">
+        <div id="debriefStars" style="font-size:2.2rem; color:var(--accent-amber); letter-spacing:6px; margin-bottom:0.5rem;">★★★</div>
+        <div id="debriefOutcome" style="font-family:var(--font-display); font-size:1.1rem; font-weight:800; color:var(--accent-teal); margin-bottom:0.25rem;">PASSED</div>
+        <div id="debriefGrade" style="font-family:var(--font-display); font-size:1.4rem; font-weight:800; color:#fff; margin-bottom:0.25rem;">GRADE S</div>
+        <div id="debriefTotalScore" style="font-family:var(--font-mono); font-size:1.1rem; color:var(--accent-cyan); margin-bottom:1.5rem;">920 / 1000</div>
+
+        <!-- 1,000 Points Breakdown Table -->
+        <div style="background:var(--bg-card); border-radius:8px; border:1px solid var(--border-dim); padding:1rem; margin-bottom:1.5rem; text-align:left;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.85rem;">
+            <span>Service &amp; Mission Restoration:</span>
+            <strong id="scoreBreakdownService" style="font-family:var(--font-mono); color:#fff;">400 / 400</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.85rem;">
+            <span>Diagnosis &amp; Algorithm Accuracy:</span>
+            <strong id="scoreBreakdownDiagnosis" style="font-family:var(--font-mono); color:#fff;">250 / 250</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.85rem;">
+            <span>DP Efficiency:</span>
+            <strong id="scoreBreakdownDp" style="font-family:var(--font-mono); color:#fff;">140 / 150</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.85rem;">
+            <span>Speed &amp; Response Time:</span>
+            <strong id="scoreBreakdownSpeed" style="font-family:var(--font-mono); color:#fff;">80 / 100</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+            <span>Asset Protection (No Loss):</span>
+            <strong id="scoreBreakdownAsset" style="font-family:var(--font-mono); color:#fff;">100 / 100</strong>
+          </div>
+        </div>
+
+        <div style="background:rgba(6, 182, 212, 0.08); border:1px solid rgba(6, 182, 212, 0.2); border-radius:8px; padding:1rem; text-align:left; font-size:0.85rem; color:var(--text-main);">
+          <strong style="color:var(--accent-cyan); display:block; margin-bottom:0.25rem;">Instructor Asha Rao:</strong>
+          <span id="debriefFeedback">Flawless diagnosis. The dual-feed to the hospital was preserved without tripping healthy equipment.</span>
+        </div>
+      </div>
+      <div class="game-modal-footer">
+        <button class="btn-game-secondary" onclick="window.GameShell.closeModals(); window.GameShell.showScreen('missionSelect');">
+          Mission Select
+        </button>
+        <button class="btn-game-primary" onclick="window.GameShell.closeModals(); window.GameShell.loadMission('2');">
+          Next Mission &rarr;
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       SCRIPTS
+       ====================================================================== -->
+  <!-- Core Data -->
+  <script src="js/data/trainingGridData.js"></script>
+  <script src="js/data/threatData.js"></script>
+
+  <!-- Core DSA & Physics Engines -->
+  <script src="js/engine/graph.js"></script>
+  <script src="js/engine/dsaEngine.js"></script>
+
+  <!-- Game Engines -->
+  <script src="js/engine/soundEngine.js"></script>
+  <script src="js/engine/gameStorage.js"></script>
+  <script src="js/engine/attackEscalation.js"></script>
+  <script src="js/engine/storyEngine.js"></script>
+  <script src="js/engine/characterDialogue.js"></script>
+
+  <!-- Visualizers & Views -->
+  <script src="js/visualizer/trainingGraphVisualizer.js"></script>
+  <script src="js/views/defenderIntroView.js"></script>
+  <script src="js/views/defenderView.js"></script>
+  <script src="js/views/gameShell.js"></script>
+
+</body>
+</html>

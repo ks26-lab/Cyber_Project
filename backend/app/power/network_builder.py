@@ -21,6 +21,7 @@ from app.power.models import (
     DataClassification
 )
 from app.power.test_networks import get_benchmark_4bus_test_network
+from app.power.ieee30_network import get_ieee30_benchmark_network
 
 
 # CEA Standard Conductor Benchmarks for Representative ACSR lines
@@ -57,6 +58,11 @@ class ElectricalNetworkBuilder:
     def build_test_network(cls) -> Dict[str, Any]:
         """Returns the isolated 4-bus validation benchmark network."""
         return get_benchmark_4bus_test_network()
+
+    @classmethod
+    def build_ieee30_network(cls) -> Dict[str, Any]:
+        """Returns the authenticated IEEE 30-bus transmission benchmark network."""
+        return get_ieee30_benchmark_network()
 
     @classmethod
     def build_india_grid_electrical_model(cls, db: Session) -> Dict[str, Any]:

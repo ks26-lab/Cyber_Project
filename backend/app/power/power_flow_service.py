@@ -37,7 +37,7 @@ class PowerFlowService:
             "service": "GRIDSEC Cyber-Physical Electrical Engine",
             "version": "2.0.0-physics-core",
             "solver_backend": "pandapower 3.5.4 (Newton-Raphson AC / Exact I^2*R Losses)",
-            "supported_networks": ["TEST_NETWORK", "INDIA_GRID_59"],
+            "supported_networks": ["TEST_NETWORK", "INDIA_GRID_59", "IEEE_30"],
             "data_provenance_enforced": True,
             "validation_engine_active": True,
             "staged_entities": {
@@ -62,12 +62,15 @@ class PowerFlowService:
 
     def get_network_topology(self, network_id: str, db: Session) -> Dict[str, Any]:
         """Builds and returns electrical network topology for a specified network ID."""
-        if network_id in ("TEST_NETWORK", "BENCHMARK_4BUS", "4BUS"):
+        nid = (network_id or "TEST_NETWORK").upper()
+        if nid in ("TEST_NETWORK", "BENCHMARK_4BUS", "4BUS"):
             return ElectricalNetworkBuilder.build_test_network()
-        elif network_id in ("INDIA_GRID_59", "INDIA_GRID", "NATIONAL_GRID"):
+        elif nid in ("IEEE_30", "IEEE_30_BUS", "IEEE30", "CASE30"):
+            return ElectricalNetworkBuilder.build_ieee30_network()
+        elif nid in ("INDIA_GRID_59", "INDIA_GRID", "NATIONAL_GRID"):
             return ElectricalNetworkBuilder.build_india_grid_electrical_model(db)
         else:
-            raise ValueError(f"Unknown network_id: {network_id}. Supported options: ['TEST_NETWORK', 'INDIA_GRID_59']")
+            raise ValueError(f"Unknown network_id: {network_id}. Supported options: ['TEST_NETWORK', 'IEEE_30', 'INDIA_GRID_59']")
 
     def run_or_stage_power_flow(
         self,
@@ -159,6 +162,8 @@ class PowerFlowService:
             }
 
         # Analyze lines along the candidate route
+        network_data = self.get_network_topology(network_id, db)
+        line_lookup = {l.line_id: l for l in network_data.get("lines", [])}
         bottlenecks = []
         for i in range(len(candidate_route) - 1):
             u, v = candidate_route[i], candidate_route[i+1]
@@ -167,12 +172,16 @@ class PowerFlowService:
                 None
             )
             if matching_line:
-                est_loading = matching_line.loading_percent + (additional_mw / 1000.0 * 100.0) # approximate margin check
+                orig_l = line_lookup.get(matching_line.line_id)
+                thermal_mw = float(orig_l.thermal_limit_mw) if (orig_l and orig_l.thermal_limit_mw) else 1000.0
+                added_pct = (additional_mw / max(1.0, thermal_mw)) * 100.0
+                est_loading = round(matching_line.loading_percent + added_pct, 1)
                 if est_loading > 100.0:
                     bottlenecks.append({
                         "line_id": matching_line.line_id,
                         "from_bus": u,
                         "to_bus": v,
+                        "thermal_limit_mw": thermal_mw,
                         "current_loading": matching_line.loading_percent,
                         "projected_loading": est_loading,
                         "thermal_limit_exceeded": True

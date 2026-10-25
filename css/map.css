@@ -708,6 +708,26 @@
   font-family: var(--font-sans);
 }
 
+/* Offline Schematic Grid Fallback Mode */
+.schematic-fallback-active,
+.schematic-mode-active {
+  background: #f4f3ef !important;
+  background-image: 
+    linear-gradient(rgba(200, 195, 185, 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 195, 185, 0.25) 1px, transparent 1px) !important;
+  background-size: 32px 32px !important;
+}
+
+.schematic-fallback-active .leaflet-tile-pane,
+.schematic-mode-active .leaflet-tile-pane {
+  display: none !important;
+}
+
+/* Ensure failed tile images never show browser broken-icon artifacts */
+.leaflet-tile-container img.leaflet-tile {
+  background-color: transparent !important;
+}
+
 /* ==========================================================================
    AI Grid Telemetry & Protocol Summary Card
    ========================================================================== */

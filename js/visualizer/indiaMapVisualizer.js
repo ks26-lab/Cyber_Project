@@ -11,7 +11,7 @@
  */
 
 class IndiaMapVisualizer {
-  constructor(containerId, gridData, onSelectNodeCallback, onSelectTransformerCallback, onTraceOperatorCallback) {
+  constructor(containerId, gridData, onSelectNodeCallback, onSelectTransformerCallback, onTraceOperatorCallback, onSelectBranchCallback) {
     this.containerId = containerId;
     this.container = document.getElementById(containerId);
     this.data = gridData;
@@ -53,11 +53,13 @@ class IndiaMapVisualizer {
     this.onSelectNode = onSelectNodeCallback || (() => {});
     this.onSelectTransformer = onSelectTransformerCallback || (() => {});
     this.onTraceOperator = onTraceOperatorCallback || (() => {});
+    this.onSelectBranch = onSelectBranchCallback || (() => {});
 
     this.map = null;
     this.baseLayers = {};
     this.activeBaseLayer = null;
-    this.currentBaseLayerType = 'clean'; // 'clean' | 'satellite' | 'osm'
+    this.currentBaseLayerType = 'clean'; // 'clean' | 'satellite' | 'osm' | 'schematic'
+    this.selectedBranchId = null;
 
     this.nodeMarkers = [];
     this.corridorLines = [];
@@ -541,21 +543,48 @@ class IndiaMapVisualizer {
       [36.5, 97.5]
     ], { padding: [20, 20], maxZoom: 6 });
 
-    // 1. Clean OpenStreetMap Standard Map Layer (Zero API key watermark, reliable)
-    this.baseLayers.clean = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      subdomains: 'abc',
-      maxZoom: 19
+    const transparentTile = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+    // 1. Clean OpenStreetMap Standard (Zero watermark, fully open, reliable)
+    this.baseLayers.clean = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      errorTileUrl: transparentTile,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     });
 
     // 2. Real Photographic High-Resolution Satellite View Layer (Esri World Imagery)
     this.baseLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 18
+      maxZoom: 18,
+      errorTileUrl: transparentTile,
+      attribution: '&copy; Esri, Maxar, Earthstar Geographics'
     });
 
     // 3. Clean Esri Topography Layer
     this.baseLayers.osm = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 18
+      maxZoom: 18,
+      errorTileUrl: transparentTile,
+      attribution: '&copy; Esri, HERE, Garmin, USGS'
     });
+
+    // 4. Clean Local Offline Schematic Technical Grid (Zero external HTTP dependencies)
+    this.baseLayers.schematic = L.tileLayer('', {
+      maxZoom: 18,
+      errorTileUrl: transparentTile,
+      attribution: 'GRIDSEC Local Schematic Vector Grid'
+    });
+
+    // Graceful error handler to switch to local schematic pattern if tiles fail
+    const handleTileError = () => {
+      if (this.container) {
+        this.container.classList.add('schematic-fallback-active');
+      }
+    };
+    this.baseLayers.clean.on('tileerror', handleTileError);
+    this.baseLayers.satellite.on('tileerror', handleTileError);
+    this.baseLayers.osm.on('tileerror', handleTileError);
+
+    // Infrastructure state registry for consistent visual conventions
+    this.infrastructureStates = {};
 
     // Add default layer
     this.setBaseLayer('clean');
@@ -565,6 +594,9 @@ class IndiaMapVisualizer {
       .addAttribution('&copy; Grid-India / CEA &middot; OpenStreetMap &middot; Esri')
       .addTo(this.map);
 
+    // Initial network fitting
+    this.fitNetwork();
+
     // Render Data Layers
     this.renderCorridors();
     this.renderNodes();
@@ -573,7 +605,9 @@ class IndiaMapVisualizer {
     // Invalidate size once mounted in DOM
     [50, 150, 350, 700, 1200].forEach(delay => {
       setTimeout(() => {
-        if (this.map) this.map.invalidateSize();
+        if (this.map) {
+          this.map.invalidateSize();
+        }
       }, delay);
     });
 
@@ -582,39 +616,162 @@ class IndiaMapVisualizer {
     });
   }
 
+  fitNetwork() {
+    if (!this.map || !this.data || !this.data.nodes || this.data.nodes.length === 0) return;
+    const lats = this.data.nodes.map(n => Number(n.lat)).filter(l => !isNaN(l) && l !== 0);
+    const lons = this.data.nodes.map(n => Number(n.lon)).filter(l => !isNaN(l) && l !== 0);
+    if (lats.length === 0 || lons.length === 0) return;
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLon = Math.min(...lons);
+    const maxLon = Math.max(...lons);
+    const padLat = Math.max(0.4, (maxLat - minLat) * 0.08);
+    const padLon = Math.max(0.4, (maxLon - minLon) * 0.08);
+    this.map.fitBounds([
+      [minLat - padLat, minLon - padLon],
+      [maxLat + padLat, maxLon + padLon]
+    ], { padding: [25, 25], maxZoom: 10 });
+  }
+
+  resetView() {
+    this.fitNetwork();
+  }
+
+  zoomIn() {
+    if (this.map) this.map.zoomIn();
+  }
+
+  zoomOut() {
+    if (this.map) this.map.zoomOut();
+  }
+
+  setNetwork(networkId) {
+    const isIEEE = networkId === 'IEEE_30';
+    this.data = isIEEE ? (window.IEEE_30_DATA || this.data) : (window.INDIA_GRID_DATA || this.data);
+    this.selectedNodeId = isIEEE ? 'BUS-1' : 'WR-RAIGARH';
+    this.selectedTransformerId = null;
+    this.infrastructureStates = {};
+    
+    this.buildSearchIndex();
+    this.renderCorridors();
+    this.renderNodes();
+    this.fitNetwork();
+  }
+
+  setInfrastructureState(targetId, state, metadata = {}) {
+    if (!this.infrastructureStates) this.infrastructureStates = {};
+    if (state === 'normal') {
+      delete this.infrastructureStates[targetId];
+    } else {
+      this.infrastructureStates[targetId] = { state, ...metadata };
+    }
+    this.applyInfrastructureStyles();
+  }
+
+  resetInfrastructureStates() {
+    this.infrastructureStates = {};
+    this.applyInfrastructureStyles();
+  }
+
+  applyInfrastructureStyles() {
+    if (!this.map) return;
+    const states = this.infrastructureStates || {};
+
+    // 1. Corridors
+    this.corridorLines.forEach(({ line, corridor }) => {
+      const c = corridor;
+      const targetKeys = [c.id, `EDGE-${c.from}-${c.to}`, `EDGE-${c.to}-${c.from}`, `${c.from}-${c.to}`, `${c.to}-${c.from}`];
+      let stateEntry = null;
+      for (const k of targetKeys) {
+        if (states[k]) {
+          stateEntry = states[k];
+          break;
+        }
+      }
+
+      if (stateEntry) {
+        const s = stateEntry.state;
+        if (s === 'tripped') {
+          line.setStyle({ color: '#dc2626', weight: 4.5, opacity: 0.95, dashArray: '8, 6' });
+        } else if (s === 'overloaded') {
+          line.setStyle({ color: '#be123c', weight: 5, opacity: 1.0, dashArray: '4, 4' });
+        } else if (s === 'attacked') {
+          line.setStyle({ color: '#ea580c', weight: 4, opacity: 1.0, dashArray: null });
+        } else if (s === 'selected') {
+          line.setStyle({ color: '#0284c7', weight: 4.5, opacity: 1.0, dashArray: null });
+        } else if (s === 'restored') {
+          line.setStyle({ color: '#16a34a', weight: 4.5, opacity: 1.0, dashArray: null });
+        } else if (s === 'bridge') {
+          line.setStyle({ color: '#f59e0b', weight: 5.0, opacity: 1.0, dashArray: '6, 6' });
+        } else if (s === 'highlighted_path') {
+          line.setStyle({ color: '#06b6d4', weight: 5.5, opacity: 1.0, dashArray: null });
+        } else if (s === 'bfs_frontier' || s === 'dfs_visited') {
+          line.setStyle({ color: '#9333ea', weight: 4.5, opacity: 0.9, dashArray: null });
+        }
+      } else if (line._defaultStyle) {
+        line.setStyle(line._defaultStyle);
+      }
+    });
+
+    // 2. Nodes
+    this.nodeMarkers.forEach(({ marker, node }) => {
+      const n = node;
+      const stateEntry = states[n.id];
+      if (stateEntry) {
+        const s = stateEntry.state;
+        if (s === 'attacked') {
+          marker.setStyle({ fillColor: '#ffedd5', color: '#ea580c', weight: 3.5, radius: 11, fillOpacity: 1.0, opacity: 1.0 });
+        } else if (s === 'tripped') {
+          marker.setStyle({ fillColor: '#fee2e2', color: '#dc2626', weight: 3.5, radius: 10, fillOpacity: 1.0, opacity: 1.0 });
+        } else if (s === 'overloaded') {
+          marker.setStyle({ fillColor: '#ffe4e6', color: '#be123c', weight: 4.0, radius: 12, fillOpacity: 1.0, opacity: 1.0 });
+        } else if (s === 'selected') {
+          marker.setStyle({ fillColor: '#e0f2fe', color: '#0284c7', weight: 3.5, radius: 11, fillOpacity: 1.0, opacity: 1.0 });
+        } else if (s === 'restored') {
+          marker.setStyle({ fillColor: '#dcfce7', color: '#16a34a', weight: 3.5, radius: 11, fillOpacity: 1.0, opacity: 1.0 });
+        } else if (s === 'bridge' || s === 'articulation_point') {
+          marker.setStyle({ fillColor: '#fef3c7', color: '#d97706', weight: 4.0, radius: 12, fillOpacity: 1.0, opacity: 1.0 });
+        } else if (s === 'bfs_visited' || s === 'dfs_visited') {
+          marker.setStyle({ fillColor: '#f3e8ff', color: '#9333ea', weight: 3.5, radius: 11, fillOpacity: 1.0, opacity: 1.0 });
+        }
+      } else if (marker._defaultStyle) {
+        marker.setStyle(marker._defaultStyle);
+      }
+    });
+  }
+
   setBaseLayer(type) {
-    if (!this.map || !this.baseLayers[type]) return;
+    if (!this.map) return;
 
     if (this.activeBaseLayer) {
       this.map.removeLayer(this.activeBaseLayer);
+      this.activeBaseLayer = null;
     }
 
-    this.activeBaseLayer = this.baseLayers[type];
-    this.activeBaseLayer.addTo(this.map);
-    this.currentBaseLayerType = type;
+    if (type === 'schematic') {
+      this.currentBaseLayerType = 'schematic';
+      if (this.container) this.container.classList.add('schematic-mode-active');
+    } else if (this.baseLayers[type]) {
+      if (this.container) this.container.classList.remove('schematic-mode-active');
+      this.activeBaseLayer = this.baseLayers[type];
+      this.activeBaseLayer.addTo(this.map);
+      this.currentBaseLayerType = type;
+    }
 
     // Adjust corridor styling based on satellite vs light map
     this.updateLayerStyles();
   }
 
   updateLayerStyles() {
-    const isSat = this.currentBaseLayerType === 'satellite';
-    this.corridorLines.forEach(({ line, corridor }) => {
-      if (corridor.status === 'compromised') {
-        line.setStyle({ color: '#ef4444', weight: isSat ? 4.5 : 3.5 });
-      } else if (corridor.type === 'HVDC') {
-        line.setStyle({ color: isSat ? '#22c55e' : '#1c1917', weight: isSat ? 4.5 : 3.5 });
-      } else if (corridor.type === '765kV_AC') {
-        line.setStyle({ color: isSat ? '#38bdf8' : '#78716c', weight: isSat ? 3 : 2.5 });
-      } else {
-        line.setStyle({ color: isSat ? '#fcd34d' : '#a8a29e', weight: 1.8 });
-      }
-    });
+    this.applyInfrastructureStyles();
   }
 
   renderCorridors() {
-    // Clear old lines
-    this.corridorLines.forEach(({ line }) => this.map.removeLayer(line));
+    // Clear old lines and invisible hit areas
+    this.corridorLines.forEach(({ line, hitLine }) => {
+      if (line && this.map) this.map.removeLayer(line);
+      if (hitLine && this.map) this.map.removeLayer(hitLine);
+    });
     this.corridorLines = [];
 
     if (!this.data || !this.data.corridors) return;
@@ -642,7 +799,7 @@ class IndiaMapVisualizer {
         (toNode.operatorId === this.activeTracedOperatorId || (toNode.operatorIds && toNode.operatorIds.includes(this.activeTracedOperatorId)))
       );
 
-      const isCompromised = c.status === 'compromised';
+      const isCompromised = c.status === 'compromised' || c.status === 'tripped' || c.status === 'OUT_OF_SERVICE';
       const isHVDC = c.type === 'HVDC';
       const is765 = c.type === '765kV_AC';
       const isSat = this.currentBaseLayerType === 'satellite';
@@ -669,6 +826,7 @@ class IndiaMapVisualizer {
         if (isCompromised) {
           strokeColor = '#ef4444';
           strokeWidth = 3.5;
+          dashArray = '8, 6';
         } else if (isHVDC) {
           strokeColor = isSat ? '#22c55e' : '#1c1917';
           strokeWidth = isSat ? 4.5 : 3.5;
@@ -688,26 +846,79 @@ class IndiaMapVisualizer {
         opacity: opacity,
         dashArray: dashArray,
         lineCap: 'round',
-        lineJoin: 'round'
+        lineJoin: 'round',
+        className: 'grid-corridor-path'
+      }).addTo(this.map);
+      polyline._defaultStyle = { color: strokeColor, weight: strokeWidth, opacity: opacity, dashArray: dashArray };
+
+      // Wide invisible hit area (18px) for effortless clicking on thin branches
+      const hitLine = L.polyline([[fromNode.lat, fromNode.lon], [toNode.lat, toNode.lon]], {
+        color: '#0284c7',
+        weight: 18,
+        opacity: 0,
+        interactive: true,
+        className: 'grid-corridor-hitarea'
       }).addTo(this.map);
 
       // Tooltip on corridor line
       const opBadge = isCorridorTraced && activeOp ? `<span style="background:${activeOp.color}; color:#fff; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:700;">${activeOp.shortName}</span>` : '';
-      polyline.bindTooltip(`
-        <div style="font-family:Inter,sans-serif; padding:3px;">
+      const tooltipHtml = `
+        <div style="font-family:Inter,sans-serif; padding:4px; max-width:260px;">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:2px;">
-            <div style="font-weight:700; color:#1c1917; font-size:11.5px;">${c.name}</div>
+            <strong style="color:#0284c7; font-size:11.5px;"><i class="fa-solid fa-bolt"></i> ${c.id}</strong>
+            <span style="font-size:9px; background:#f0fdf4; color:#166534; padding:1px 4px; border-radius:3px; font-weight:700;">${c.type || 'Line'}</span>
             ${opBadge}
           </div>
-          <div style="font-size:10px; color:#57534e;">
-            ${c.type} &middot; ${c.voltage} &middot; <strong style="color:#166534;">${c.currentFlowMW} MW</strong> (${c.distanceKm} km)
+          <div style="font-weight:700; color:#1c1917; font-size:11px;">${c.name || `${c.from} ↔ ${c.to}`}</div>
+          <div style="font-size:10px; color:#57534e; margin-top:2px;">
+            ${c.voltage || '400kV'} &middot; Flow: <strong style="color:#166534;">${c.currentFlowMW || 0} MW</strong> (${c.distanceKm || 0} km)
           </div>
-          <div style="font-size:9.5px; color:#78716c; margin-top:2px;">${c.direction}</div>
+          <div style="font-size:9.5px; color:#0284c7; font-weight:600; margin-top:3px; display:flex; align-items:center; gap:4px;">
+            <i class="fa-solid fa-arrow-pointer"></i> Click to inspect &amp; analyze branch
+          </div>
         </div>
-      `, { sticky: true, className: 'grid-corridor-tooltip' });
+      `;
+      polyline.bindTooltip(tooltipHtml, { sticky: true, className: 'grid-corridor-tooltip' });
+      hitLine.bindTooltip(tooltipHtml, { sticky: true, className: 'grid-corridor-tooltip' });
 
-      this.corridorLines.push({ line: polyline, corridor: c, fromNode, toNode, isCorridorTraced });
+      // Interactive Click & Hover Handlers
+      const selectBranchHandler = (e) => {
+        if (e && e.originalEvent) {
+          L.DomEvent.stopPropagation(e);
+        }
+        this.selectedBranchId = c.id;
+        this.resetInfrastructureStates();
+        this.setInfrastructureState(c.id, 'selected');
+
+        if (this.onSelectBranch) {
+          this.onSelectBranch(c);
+        }
+        if (window.NetworkAnalysisView && typeof window.NetworkAnalysisView.onSelectBranchFromMap === 'function') {
+          window.NetworkAnalysisView.onSelectBranchFromMap(c);
+        }
+        if (window.SimulatorView && typeof window.SimulatorView.selectTargetFromMap === 'function') {
+          window.SimulatorView.selectTargetFromMap(c.id);
+        }
+      };
+
+      polyline.on('click', selectBranchHandler);
+      hitLine.on('click', selectBranchHandler);
+
+      // Subtle hover feedback
+      hitLine.on('mouseover', () => {
+        if (!this.infrastructureStates || !this.infrastructureStates[c.id]) {
+          polyline.setStyle({ weight: strokeWidth + 2.5, opacity: 1.0 });
+        }
+      });
+      hitLine.on('mouseout', () => {
+        if (!this.infrastructureStates || !this.infrastructureStates[c.id]) {
+          polyline.setStyle(polyline._defaultStyle);
+        }
+      });
+
+      this.corridorLines.push({ line: polyline, hitLine, corridor: c, fromNode, toNode, isCorridorTraced });
     });
+    this.applyInfrastructureStyles();
   }
 
   renderNodes() {
@@ -816,6 +1027,14 @@ class IndiaMapVisualizer {
         opacity: opacity,
         fillOpacity: fillOpacity
       }).addTo(this.map);
+      circleMarker._defaultStyle = {
+        radius: isSelected ? radius + 4 : radius,
+        fillColor: fillColor,
+        color: isSelected ? '#166534' : strokeColor,
+        weight: isSelected ? 3.5 : (isNodeTraced ? 3 : 2),
+        opacity: opacity,
+        fillOpacity: fillOpacity
+      };
 
       // Label Tooltip underneath the node pin
       const labelText = n.city ? n.city.split('/')[0].trim() : n.name.split(' ')[0];
@@ -832,12 +1051,18 @@ class IndiaMapVisualizer {
       circleMarker.on('click', () => {
         this.selectedNodeId = n.id;
         this.selectedTransformerId = null;
+        this.resetInfrastructureStates();
+        this.setInfrastructureState(n.id, 'selected');
         this.renderNodes();
         this.onSelectNode(n);
+        if (window.SimulatorView && typeof window.SimulatorView.selectTargetFromMap === 'function') {
+          window.SimulatorView.selectTargetFromMap(n.id);
+        }
       });
 
       this.nodeMarkers.push({ marker: circleMarker, node: n, isNodeTraced });
     });
+    this.applyInfrastructureStyles();
   }
 
   filterByFacility(facilityType) {
@@ -1195,6 +1420,17 @@ class IndiaMapVisualizer {
     this.renderNodes();
     if (this.onTraceOperator) {
       this.onTraceOperator(null, [], []);
+    }
+  }
+
+  destroy() {
+    if (this.flowAnimInterval) {
+      clearInterval(this.flowAnimInterval);
+      this.flowAnimInterval = null;
+    }
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
     }
   }
 }

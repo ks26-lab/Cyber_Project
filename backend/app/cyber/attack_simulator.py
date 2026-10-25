@@ -28,18 +28,50 @@ class DynamicTargetSelector:
     TEST_GRID_LINES = ["LINE-1-2", "LINE-1-3", "LINE-2-3"]
     TEST_GRID_XFMRS = ["XFMR-3-4"]
     TEST_GRID_BUSES = ["BUS-1", "BUS-2", "BUS-3", "BUS-4"]
+
+    IEEE30_LINES = [
+        "LINE-1-2", "LINE-1-3", "LINE-2-4", "LINE-3-4", "LINE-2-5", "LINE-2-6",
+        "LINE-4-6", "LINE-5-7", "LINE-6-7", "LINE-6-8", "LINE-9-11", "LINE-9-10",
+        "LINE-12-13", "LINE-12-14", "LINE-12-15", "LINE-12-16", "LINE-14-15",
+        "LINE-16-17", "LINE-15-18", "LINE-18-19", "LINE-19-20", "LINE-10-20",
+        "LINE-10-17", "LINE-10-21", "LINE-10-22", "LINE-21-22", "LINE-15-23",
+        "LINE-22-24", "LINE-23-24", "LINE-24-25", "LINE-25-26", "LINE-25-27",
+        "LINE-27-29", "LINE-27-30", "LINE-29-30", "LINE-8-28", "LINE-6-28"
+    ]
+    IEEE30_XFMRS = ["XFMR-6-9", "XFMR-6-10", "XFMR-4-12", "XFMR-28-27"]
+    IEEE30_BUSES = [f"BUS-{i}" for i in range(1, 31)]
     
     @classmethod
-    def get_eligible_targets(cls, scenario_id: Optional[str], db: Optional[Any] = None) -> List[str]:
+    def get_eligible_targets(
+        cls,
+        scenario_id: Optional[str],
+        db: Optional[Any] = None,
+        network_id: Optional[str] = None
+    ) -> List[str]:
         """
         Returns list of valid eligible asset IDs for the given scenario based on real network models.
         """
         sid = (scenario_id or "").upper().strip()
+        nid = (network_id or "TEST_NETWORK").upper().strip()
+
+        # Handle IEEE 30-bus benchmark specifically
+        if nid in ("IEEE_30", "IEEE_30_BUS", "IEEE30", "CASE30"):
+            if "BREAKER" in sid or "SCN-001" in sid or "UNAUTHORIZED_CONTROL" in sid or "SCENARIO_A" in sid or "ATTACK_1" in sid:
+                return list(cls.IEEE30_LINES) + list(cls.IEEE30_XFMRS)
+            elif "TELEMETRY" in sid or "SCN-002" in sid or "FDIA" in sid or "SCENARIO_B" in sid or "ATTACK_2" in sid:
+                return list(cls.IEEE30_BUSES) + list(cls.IEEE30_LINES)
+            elif "CONFIG" in sid or "SCN-003" in sid or "TAP" in sid or "SCENARIO_C" in sid or "ATTACK_3" in sid:
+                return list(cls.IEEE30_XFMRS)
+            elif "RECON" in sid or "SCN-004" in sid or "PROBE" in sid or "SCENARIO_D" in sid or "ATTACK_4" in sid:
+                return list(cls.IEEE30_BUSES)
+            elif "CAMPAIGN" in sid or "SCN-005" in sid or "COORDINATED" in sid or "SCENARIO_E" in sid or "ATTACK_5" in sid:
+                return list(cls.IEEE30_BUSES) + list(cls.IEEE30_XFMRS) + list(cls.IEEE30_LINES)
+            return list(cls.IEEE30_LINES)
         
         # 1. Unauthorized Control: Controllable switching corridors / breakers
         if "BREAKER" in sid or "SCN-001" in sid or "UNAUTHORIZED_CONTROL" in sid or "SCENARIO_A" in sid or "ATTACK_1" in sid or "SCENARIO_1" in sid:
             targets = list(cls.TEST_GRID_LINES) + list(cls.TEST_GRID_XFMRS)
-            if db:
+            if db and nid in ("INDIA_GRID_59", "INDIA_GRID", "NATIONAL_GRID"):
                 try:
                     from app.models.transmission import TransmissionLine
                     lines = db.query(TransmissionLine.line_id).filter(TransmissionLine.status == "IN_SERVICE").all()
@@ -52,7 +84,7 @@ class DynamicTargetSelector:
         # 2. Telemetry Integrity: Telemetry-capable buses & branches
         if "TELEMETRY" in sid or "SCN-002" in sid or "FDIA" in sid or "SCENARIO_B" in sid or "ATTACK_2" in sid or "SCENARIO_2" in sid:
             targets = list(cls.TEST_GRID_BUSES) + list(cls.TEST_GRID_LINES)
-            if db:
+            if db and nid in ("INDIA_GRID_59", "INDIA_GRID", "NATIONAL_GRID"):
                 try:
                     from app.models.asset import Asset
                     buses = db.query(Asset.asset_id).all()
@@ -65,7 +97,7 @@ class DynamicTargetSelector:
         # 3. Configuration Tampering: Transformer OLTC bays
         if "CONFIG" in sid or "SCN-003" in sid or "TAP" in sid or "SCENARIO_C" in sid or "ATTACK_3" in sid or "SCENARIO_3" in sid:
             targets = list(cls.TEST_GRID_XFMRS)
-            if db:
+            if db and nid in ("INDIA_GRID_59", "INDIA_GRID", "NATIONAL_GRID"):
                 try:
                     from app.models.asset import TransformerBay
                     xfmrs = db.query(TransformerBay.bay_id).all()
@@ -77,6 +109,14 @@ class DynamicTargetSelector:
 
         # 4. Reconnaissance / Probing: Topology reachable assets
         if "RECON" in sid or "SCN-004" in sid or "PROBE" in sid or "SCENARIO_D" in sid or "ATTACK_4" in sid or "SCENARIO_4" in sid:
+            if db and nid in ("INDIA_GRID_59", "INDIA_GRID", "NATIONAL_GRID"):
+                try:
+                    from app.models.asset import Asset
+                    buses = db.query(Asset.asset_id).all()
+                    if buses:
+                        return [b[0] for b in buses]
+                except Exception:
+                    pass
             return list(cls.TEST_GRID_BUSES) + list(cls.TEST_GRID_LINES) + list(cls.TEST_GRID_XFMRS)
 
         # 5. Coordinated Campaign: Diverse multi-asset classes
@@ -86,11 +126,17 @@ class DynamicTargetSelector:
         return list(cls.TEST_GRID_LINES) + list(cls.TEST_GRID_BUSES)
 
     @classmethod
-    def select_target(cls, scenario_id: Optional[str], seed: Optional[int] = None, db: Optional[Any] = None) -> str:
+    def select_target(
+        cls,
+        scenario_id: Optional[str],
+        seed: Optional[int] = None,
+        db: Optional[Any] = None,
+        network_id: Optional[str] = None
+    ) -> str:
         """
         Deterministically selects a single eligible target based on optional seed.
         """
-        eligible = cls.get_eligible_targets(scenario_id, db)
+        eligible = cls.get_eligible_targets(scenario_id, db, network_id=network_id)
         if not eligible:
             return "LINE-1-3"
         rng = random.Random(seed) if seed is not None else random.Random()
@@ -102,21 +148,25 @@ class DynamicTargetSelector:
         scenario_id: Optional[str],
         count: int = 4,
         seed: Optional[int] = None,
-        db: Optional[Any] = None
+        db: Optional[Any] = None,
+        network_id: Optional[str] = None
     ) -> List[str]:
         """
         Deterministically selects multiple eligible targets for reconnaissance or coordinated campaigns.
         """
-        eligible = cls.get_eligible_targets(scenario_id, db)
+        eligible = cls.get_eligible_targets(scenario_id, db, network_id=network_id)
         rng = random.Random(seed) if seed is not None else random.Random()
         if not eligible:
-            return ["BUS-1", "BUS-2", "LINE-1-2", "XFMR-3-4"]
+            nid = (network_id or "").upper()
+            if nid in ("IEEE_30", "IEEE_30_BUS", "IEEE30"):
+                return ["BUS-1", "XFMR-6-9", "LINE-1-2", "BUS-2"]
+            return ["BUS-1", "XFMR-3-4", "LINE-1-3", "BUS-2"]
 
         sid = (scenario_id or "").upper().strip()
         if "CAMPAIGN" in sid or "SCN-005" in sid or "COORDINATED" in sid or "SCENARIO_E" in sid or "ATTACK_5" in sid or "SCENARIO_5" in sid:
-            buses = [t for t in eligible if "BUS" in t or "SUB" in t] or cls.TEST_GRID_BUSES
-            xfmrs = [t for t in eligible if "XFMR" in t or "TRAFO" in t] or cls.TEST_GRID_XFMRS
-            lines = [t for t in eligible if "LINE" in t] or cls.TEST_GRID_LINES
+            buses = [t for t in eligible if "BUS" in t or "SUB" in t] or (cls.IEEE30_BUSES if network_id in ("IEEE_30", "IEEE_30_BUS") else cls.TEST_GRID_BUSES)
+            xfmrs = [t for t in eligible if "XFMR" in t or "TRAFO" in t] or (cls.IEEE30_XFMRS if network_id in ("IEEE_30", "IEEE_30_BUS") else cls.TEST_GRID_XFMRS)
+            lines = [t for t in eligible if "LINE" in t] or (cls.IEEE30_LINES if network_id in ("IEEE_30", "IEEE_30_BUS") else cls.TEST_GRID_LINES)
 
             t0 = rng.choice(buses)
             t1 = rng.choice(xfmrs)
@@ -164,8 +214,9 @@ class AttackSimulator:
         )
         
         targets = request.target_asset_ids or kwargs.get("target_asset_ids") or kwargs.get("target_assets") or kwargs.get("targets")
+        net_id = getattr(request, "baseline_network", None) or kwargs.get("baseline_network") or "TEST_NETWORK"
         if not targets or targets == ["AUTO"]:
-            targets = DynamicTargetSelector.select_multi_targets(request.scenario_id, count=5, seed=seed)
+            targets = DynamicTargetSelector.select_multi_targets(request.scenario_id, count=5, seed=seed, network_id=net_id)
         elif isinstance(targets, str):
             targets = [targets]
 
@@ -264,11 +315,9 @@ class AttackSimulator:
         )
         
         targets = request.target_asset_ids or kwargs.get("target_asset_ids") or kwargs.get("target_assets")
+        net_id = getattr(request, "baseline_network", None) or kwargs.get("baseline_network") or "TEST_NETWORK"
         if not targets or targets == ["AUTO"]:
-            if seed is not None or (request.target_asset_ids == ["AUTO"]):
-                targets = DynamicTargetSelector.select_multi_targets(request.scenario_id, count=4, seed=seed)
-            else:
-                targets = ["BUS-1", "XFMR-3-4", "LINE-1-3", "BUS-2"]
+            targets = DynamicTargetSelector.select_multi_targets(request.scenario_id, count=4, seed=seed, network_id=net_id)
         elif isinstance(targets, str):
             targets = [targets]
 

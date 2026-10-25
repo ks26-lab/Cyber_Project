@@ -36,18 +36,15 @@
       </a>
 
       <ul class="nav-links">
-        <li><a href="app.html#map" class="nav-link" style="font-weight:700; color:#166534;"><i class="fa-solid fa-map-location-dot"></i> India Grid Map</a></li>
-        <li><a href="#features" class="nav-link">Capabilities</a></li>
-        <li><a href="#interactive-demo" class="nav-link">Live Preview</a></li>
+        <li><a href="app.html#dashboard" class="nav-link" style="font-weight:700; color:#166534;"><i class="fa-solid fa-map-location-dot"></i> Grid Dashboard</a></li>
+        <li><a href="app.html#simulation" class="nav-link"><i class="fa-solid fa-crosshairs"></i> Simulation &amp; Response</a></li>
+        <li><a href="app.html#defender" class="nav-link" style="color:#059669; font-weight:700;"><i class="fa-solid fa-shield-halved"></i> Grid Defender</a></li>
+        <li><a href="app.html#analysis" class="nav-link"><i class="fa-solid fa-route"></i> Analysis &amp; Results</a></li>
       </ul>
 
       <div class="nav-actions">
-        <div class="soc-live-clock" style="display:none; @media(min-width:768px){display:flex;}">
-          <span class="live-pulse-dot"></span>
-          <span class="clock-time" id="landingLiveClock">--:--:-- IST</span>
-        </div>
-        <a href="app.html#map" class="btn btn-primary">
-          <span>Open National Grid Map</span>
+        <a href="app.html#dashboard" class="btn btn-primary">
+          <span>Open Grid Dashboard</span>
           <i class="fa-solid fa-arrow-right" style="font-size:0.75rem;"></i>
         </a>
       </div>
@@ -66,12 +63,15 @@
           GRIDSEC provides real-time SCADA anomaly detection, multi-hop incident propagation tracking, and automated contingency rerouting across India's synchronous national grid.
         </p>
         <div class="hero-cta-group">
-          <a href="app.html#map" class="btn btn-primary" style="padding: 0.75rem 1.75rem;">
-            <span>Explore India Power Grid Map</span>
+          <a href="game.html" class="btn btn-primary" style="padding: 0.75rem 1.75rem; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); box-shadow:0 4px 15px rgba(2, 132, 199, 0.4);">
+            <span><i class="fa-solid fa-shield-halved"></i> Play Grid Defender Game</span>
             <i class="fa-solid fa-arrow-right" style="font-size:0.75rem;"></i>
           </a>
-          <a href="#interactive-demo" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
-            <span>Interactive Map Preview</span>
+          <a href="app.html#dashboard" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
+            <span><i class="fa-solid fa-map-location-dot"></i> National Grid Operations</span>
+          </a>
+          <a href="app.html#simulation" class="btn btn-secondary" style="padding: 0.75rem 1.25rem;">
+            <span><i class="fa-solid fa-crosshairs"></i> Lab Sandbox</span>
           </a>
         </div>
       </div>
@@ -88,8 +88,8 @@
               <span class="status-dot healthy"></span>
               <span>All Systems Nominal (50.002 Hz)</span>
             </div>
-            <a href="app.html" class="btn btn-primary" style="padding:0.3rem 0.75rem; font-size:0.75rem;">
-              <span>Open Operations Dashboard &amp; Map</span> <i class="fa-solid fa-arrow-right" style="font-size:0.7rem;"></i>
+            <a href="app.html#dashboard" class="btn btn-primary" style="padding:0.3rem 0.75rem; font-size:0.75rem;">
+              <span>Open Grid Dashboard</span> <i class="fa-solid fa-arrow-right" style="font-size:0.7rem;"></i>
             </a>
           </div>
         </div>
@@ -143,7 +143,7 @@
               </div>
             </div>
 
-            <a href="app.html" class="btn btn-primary" style="margin-top:auto; justify-content:center; padding:0.6rem 1rem;">
+            <a href="app.html#dashboard" class="btn btn-primary" style="margin-top:auto; justify-content:center; padding:0.6rem 1rem;">
               <span>Launch Full National Grid Dashboard</span>
               <i class="fa-solid fa-arrow-right"></i>
             </a>
@@ -256,23 +256,22 @@
         </div>
 
         <div class="footer-col">
-          <h4>Platform</h4>
+          <h4>Platform Sections</h4>
           <ul class="footer-links">
-            <li><a href="app.html">Operations Dashboard</a></li>
-            <li><a href="app.html">India Power Grid Map</a></li>
-            <li><a href="app.html">SCADA Threat Detection</a></li>
-            <li><a href="app.html">Incident Investigation</a></li>
-            <li><a href="app.html">Resilience Simulator</a></li>
+            <li><a href="app.html#dashboard">Grid Dashboard &amp; Map</a></li>
+            <li><a href="app.html#simulation">Simulation &amp; Response Lab</a></li>
+            <li><a href="app.html#analysis">Analysis &amp; Results Engine</a></li>
           </ul>
         </div>
 
         <div class="footer-col">
-          <h4>Resilience Engine</h4>
+          <h4>Core Algorithms</h4>
           <ul class="footer-links">
-            <li><a href="app.html">Threat Traversal</a></li>
-            <li><a href="app.html">Min-Risk Rerouting</a></li>
-            <li><a href="app.html">Critical Bridge Detection</a></li>
-            <li><a href="app.html">Grid Islanding Defense</a></li>
+            <li><a href="app.html#analysis">Dijkstra Min-Loss Rerouting</a></li>
+            <li><a href="app.html#simulation">BFS Blast Radius Traversal</a></li>
+            <li><a href="app.html#analysis">Tarjan SPoF &amp; Bridge Detection</a></li>
+            <li><a href="app.html#analysis">DFS Synchronous Islanding</a></li>
+            <li><a href="app.html#simulation">AC Newton-Raphson Load Flow</a></li>
           </ul>
         </div>
 

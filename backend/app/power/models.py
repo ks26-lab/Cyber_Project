@@ -425,6 +425,7 @@ class PowerFlowRequest(BaseModel):
     scenario_id: Optional[str] = Field("BASE_CASE", description="Scenario label or simulation ID")
     algorithm: Optional[str] = Field("nr", description="Solver algorithm: nr (Newton-Raphson), dc, fdbx")
     enforce_q_lims: Optional[bool] = Field(True, description="Enforce generator reactive power boundaries")
+    state_overrides: Optional[Dict[str, Any]] = Field(None, description="Optional overrides e.g. tripped lines or tap positions")
 
 
 class PowerFlowResponse(PowerFlowResult):

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.services.simulation_service import simulation_service
 from app.services.simulation_state_service import simulation_state_service
-from app.schemas.sandbox_simulation import SimulationCreateRequest, SimulationStateResponse
+from app.schemas.sandbox_simulation import SimulationCreateRequest, SimulationStateResponse, SimulationEventRequest
 from app.power.models import ContingencyResult
 
 router = APIRouter(prefix="/simulation", tags=["Simulation Sandbox & What-If Drills"])
@@ -42,11 +42,26 @@ def create_sandbox_simulation(req: SimulationCreateRequest, db: Session = Depend
 
 
 @router.get("/{simulation_id}", response_model=SimulationStateResponse, summary="Get current sandbox simulation state")
+@router.get("/{simulation_id}/state", response_model=SimulationStateResponse, summary="Get sandbox simulation state")
 def get_sandbox_state(simulation_id: str, db: Session = Depends(get_db)) -> SimulationStateResponse:
     try:
         return simulation_state_service.get_scenario_state(simulation_id, db)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{simulation_id}/event", summary="Apply Event to Sandbox Simulation")
+def apply_simulation_event(
+    simulation_id: str,
+    request: SimulationEventRequest,
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    try:
+        return simulation_state_service.apply_event_to_scenario(simulation_id, request.event, db)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error applying simulation event: {str(e)}")
 
 
 @router.post("/{simulation_id}/contingency", response_model=ContingencyResult, summary="Run N-1 contingency power flow on sandbox state")

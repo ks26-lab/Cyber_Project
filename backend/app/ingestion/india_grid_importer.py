@@ -22,22 +22,44 @@ logging.basicConfig(level=logging.INFO)
 
 def extract_grid_data_from_js(js_file_path: str) -> Dict[str, Any]:
     """
-    Extracts the INDIA_GRID_DATA object from indiaGridData.js safely via Node.js runtime.
+    Extracts the INDIA_GRID_DATA object from indiaGridData.js.
+    Uses pure Python parsing first (zero external dependencies), falling back to Node.js if available.
     """
     if not os.path.exists(js_file_path):
         raise FileNotFoundError(f"Could not find source grid data at: {js_file_path}")
 
-    node_script = f"""
-    global.window = {{}};
-    const fs = require('fs');
-    const content = fs.readFileSync({json.dumps(js_file_path)}, 'utf8');
-    eval(content);
-    const data = window.INDIA_GRID_DATA;
-    process.stdout.write(JSON.stringify(data));
-    """
+    # Primary: Pure Python parsing (No Node.js dependency required)
+    try:
+        with open(js_file_path, "r", encoding="utf-8") as f:
+            content = f.read()
 
-    res = subprocess.run(["node", "-e", node_script], capture_output=True, text=True, check=True)
-    return json.loads(res.stdout)
+        start_marker = "const INDIA_GRID_DATA = "
+        idx = content.find(start_marker)
+        if idx != -1:
+            json_candidate = content[idx + len(start_marker):].strip()
+            # Find the closing object brace before export statements
+            last_brace_idx = json_candidate.rfind("};")
+            if last_brace_idx != -1:
+                json_candidate = json_candidate[:last_brace_idx + 1]
+            return json.loads(json_candidate)
+    except Exception as py_err:
+        logger.warning(f"Pure Python extraction failed ({py_err}). Trying Node.js fallback...")
+
+    # Fallback: Node.js runtime if installed
+    try:
+        node_script = f"""
+        global.window = {{}};
+        const fs = require('fs');
+        const content = fs.readFileSync({json.dumps(js_file_path)}, 'utf8');
+        eval(content);
+        const data = window.INDIA_GRID_DATA;
+        process.stdout.write(JSON.stringify(data));
+        """
+        res = subprocess.run(["node", "-e", node_script], capture_output=True, text=True, check=True)
+        return json.loads(res.stdout)
+    except Exception as node_err:
+        logger.error(f"Failed to extract grid data via Node.js: {node_err}")
+        raise RuntimeError(f"Could not extract INDIA_GRID_DATA from {js_file_path}: {node_err}")
 
 
 def seed_database(data: Dict[str, Any], db: Session) -> Dict[str, int]:

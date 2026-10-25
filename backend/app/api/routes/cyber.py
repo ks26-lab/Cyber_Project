@@ -36,19 +36,84 @@ def get_attack_scenarios():
 @router.get("/eligible-targets", response_model=List[str])
 def get_eligible_targets(
     scenario_id: Optional[str] = Query(None, description="Scenario ID e.g. SCN-001, SCN-002, SCN-003, SCN-004, SCN-005"),
+    network_id: Optional[str] = Query(None, description="Network model: INDIA_GRID_59, IEEE_30, or TEST_NETWORK"),
     db: Session = Depends(get_db)
 ):
     """
     Returns dynamically queryable list of eligible grid targets for a specific attack scenario.
     """
-    return DynamicTargetSelector.get_eligible_targets(scenario_id, db)
+    return DynamicTargetSelector.get_eligible_targets(scenario_id, db, network_id=network_id)
 
 
 @router.get("/transformers", response_model=List[Dict[str, Any]])
-def get_grid_transformers(db: Session = Depends(get_db)):
+def get_grid_transformers(
+    network_id: Optional[str] = Query(None, description="Network model: INDIA_GRID_59, IEEE_30, or TEST_NETWORK"),
+    db: Session = Depends(get_db)
+):
     """
     Returns dynamically queryable list of transformers with rating, tap limits, and connected buses.
     """
+    nid = (network_id or "INDIA_GRID_59").upper().strip()
+    if nid in ("IEEE_30", "IEEE_30_BUS", "IEEE30", "CASE30"):
+        return [
+            {
+                "transformer_id": "XFMR-6-9",
+                "name": "OLTC Intertie Transformer T1 (132/33kV)",
+                "from_bus": "BUS-6",
+                "to_bus": "BUS-9",
+                "primary_kv": 132.0,
+                "secondary_kv": 33.0,
+                "rated_mva": 100.0,
+                "current_tap": 0,
+                "tap_min": -10,
+                "tap_max": 10,
+                "location": "IEEE-30 Substation Hub 6-9",
+                "status": "IN_SERVICE"
+            },
+            {
+                "transformer_id": "XFMR-6-10",
+                "name": "OLTC Intertie Transformer T2 (132/33kV)",
+                "from_bus": "BUS-6",
+                "to_bus": "BUS-10",
+                "primary_kv": 132.0,
+                "secondary_kv": 33.0,
+                "rated_mva": 100.0,
+                "current_tap": 0,
+                "tap_min": -10,
+                "tap_max": 10,
+                "location": "IEEE-30 Substation Hub 6-10",
+                "status": "IN_SERVICE"
+            },
+            {
+                "transformer_id": "XFMR-4-12",
+                "name": "OLTC Intertie Transformer T3 (132/33kV)",
+                "from_bus": "BUS-4",
+                "to_bus": "BUS-12",
+                "primary_kv": 132.0,
+                "secondary_kv": 33.0,
+                "rated_mva": 100.0,
+                "current_tap": 0,
+                "tap_min": -10,
+                "tap_max": 10,
+                "location": "IEEE-30 Substation Hub 4-12",
+                "status": "IN_SERVICE"
+            },
+            {
+                "transformer_id": "XFMR-28-27",
+                "name": "OLTC Tie Transformer T4 (132/33kV)",
+                "from_bus": "BUS-28",
+                "to_bus": "BUS-27",
+                "primary_kv": 132.0,
+                "secondary_kv": 33.0,
+                "rated_mva": 100.0,
+                "current_tap": 0,
+                "tap_min": -10,
+                "tap_max": 10,
+                "location": "IEEE-30 Tie Hub 28-27",
+                "status": "IN_SERVICE"
+            }
+        ]
+
     results = [
         {
             "transformer_id": "XFMR-3-4",

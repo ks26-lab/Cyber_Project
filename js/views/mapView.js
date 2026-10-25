@@ -178,7 +178,9 @@ window.MapView = {
               <div class="map-hud-controls">
                 <button class="map-filter-btn active" id="btnLayerClean" onclick="window.MapView.setBaseLayer('clean', this)"><i class="fa-solid fa-map"></i> Real Map</button>
                 <button class="map-filter-btn" id="btnLayerSat" onclick="window.MapView.setBaseLayer('satellite', this)"><i class="fa-solid fa-satellite"></i> Satellite View</button>
-                <button class="map-filter-btn" id="btnLayerOsm" onclick="window.MapView.setBaseLayer('osm', this)"><i class="fa-solid fa-earth-asia"></i> OpenStreetMap</button>
+                <button class="map-filter-btn" id="btnLayerOsm" onclick="window.MapView.setBaseLayer('osm', this)"><i class="fa-solid fa-earth-asia"></i> Topo</button>
+                <button class="map-filter-btn" id="btnLayerSchematic" onclick="window.MapView.setBaseLayer('schematic', this)"><i class="fa-solid fa-diagram-project"></i> Schematic Grid</button>
+                <button class="map-filter-btn" onclick="window.app.indiaVisualizer?.fitNetwork()" title="Fit entire transmission grid inside viewport"><i class="fa-solid fa-expand"></i> Fit Network</button>
               <!-- Region & Corridor Filter Controls (Toggleable) -->
               <button class="map-filter-btn" id="btnToggleMapFilters" onclick="const container = document.getElementById('mapFiltersCollapse'); container.style.display = container.style.display === 'none' ? 'flex' : 'none'; this.classList.toggle('active');">
                 <i class="fa-solid fa-sliders"></i> Filter Options ▾
@@ -223,28 +225,39 @@ window.MapView = {
             <div class="map-hud-bottom">
               <button class="map-zoom-btn" title="Zoom In" onclick="window.app.indiaVisualizer?.zoomIn()"><i class="fa-solid fa-plus"></i></button>
               <button class="map-zoom-btn" title="Zoom Out" onclick="window.app.indiaVisualizer?.zoomOut()"><i class="fa-solid fa-minus"></i></button>
-              <button class="map-zoom-btn" title="Center India" onclick="window.app.indiaVisualizer?.resetView()"><i class="fa-solid fa-crosshairs"></i></button>
+              <button class="map-zoom-btn" title="Fit Network Viewport" onclick="window.app.indiaVisualizer?.fitNetwork()"><i class="fa-solid fa-expand"></i></button>
+              <button class="map-zoom-btn" title="Center View" onclick="window.app.indiaVisualizer?.resetView()"><i class="fa-solid fa-crosshairs"></i></button>
             </div>
 
             <!-- Comprehensive Grid Legend Card -->
-            <div class="map-legend-card" id="mapLegendCard">
+            <div class="map-legend-card collapsed" id="mapLegendCard">
               <div class="legend-card-header" onclick="this.parentElement.classList.toggle('collapsed')">
                 <span style="font-weight:700; font-size:0.75rem; color:#1c1917; display:flex; align-items:center; gap:0.35rem;">
-                  <i class="fa-solid fa-map-pin"></i> National Grid Legend (59 Nodes &middot; 54 Highways)
+                  <i class="fa-solid fa-map-pin"></i> Grid Visual Conventions &amp; Legend
                 </span>
                 <i class="fa-solid fa-chevron-down legend-collapse-icon"></i>
               </div>
 
               <div class="legend-card-body">
+                <!-- Section 0: Review 3 Consistent Cyber-Physical Visual States -->
+                <div class="legend-section-title" style="margin-top:0.15rem; color:#0369a1;"><i class="fa-solid fa-traffic-light"></i> Visual States (Consistent Conventions)</div>
+                <div class="legend-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom:0.55rem; gap:0.4rem;">
+                  <div class="legend-chip"><span style="display:inline-block; width:13px; height:13px; border-radius:50%; background:#f5f5f4; border:2px solid #44403c;"></span> <strong>Normal / Restored</strong>: Neutral in-service</div>
+                  <div class="legend-chip"><span style="display:inline-block; width:13px; height:13px; border-radius:50%; background:#e0f2fe; border:2px solid #0284c7;"></span> <strong>Selected</strong>: Blue inspection/route</div>
+                  <div class="legend-chip"><span style="display:inline-block; width:13px; height:13px; border-radius:50%; background:#ffedd5; border:2px solid #ea580c;"></span> <strong>Attacked Target</strong>: Orange compromised telemetry</div>
+                  <div class="legend-chip"><span style="display:inline-block; width:13px; height:13px; border-radius:50%; background:#fee2e2; border:2px solid #dc2626;"></span> <strong>Tripped Line</strong>: Red breaker OPEN outage</div>
+                  <div class="legend-chip" style="grid-column: span 2;"><span style="display:inline-block; width:22px; height:0px; border-top:3px dashed #be123c;"></span> <strong>Overloaded Transmission Line</strong>: Crimson dash thermal breach (>100%)</div>
+                </div>
+
                 <!-- Section 1: Power Stations & Substations -->
-                <div class="legend-section-title">Major Power Stations &amp; Substations</div>
+                <div class="legend-section-title">Infrastructure Classes</div>
                 <div class="legend-grid">
                   <div class="legend-chip"><span class="legend-symbol hvdc"></span> <strong>HVDC Terminal / Converter Hub</strong> (±800kV / ±500kV)</div>
-                  <div class="legend-chip"><span class="legend-symbol nuclear"></span> <strong>Nuclear Power Station</strong> (NPCIL Baseload)</div>
-                  <div class="legend-chip"><span class="legend-symbol thermal"></span> <strong>Super Thermal / UMPP</strong> (NTPC Coal Pit-Head)</div>
-                  <div class="legend-chip"><span class="legend-symbol hydro"></span> <strong>Hydro &amp; Pumped Storage Dam</strong> (Sutlej / Tehri / Koyna)</div>
-                  <div class="legend-chip"><span class="legend-symbol solar"></span> <strong>Mega Solar &amp; Wind Park</strong> (Bhadla / Pavagada / Muppandal)</div>
-                  <div class="legend-chip"><span class="legend-symbol substation"></span> <strong>765kV / 400kV Super Pooling Hub</strong> (PGCIL)</div>
+                  <div class="legend-chip"><span class="legend-symbol nuclear"></span> <strong>Nuclear Station</strong> (Baseload)</div>
+                  <div class="legend-chip"><span class="legend-symbol thermal"></span> <strong>Super Thermal</strong> (Pit-Head)</div>
+                  <div class="legend-chip"><span class="legend-symbol hydro"></span> <strong>Hydro / Pumped</strong></div>
+                  <div class="legend-chip"><span class="legend-symbol solar"></span> <strong>Mega Solar &amp; Wind</strong></div>
+                  <div class="legend-chip"><span class="legend-symbol substation"></span> <strong>765kV / 400kV Pooling Hub</strong></div>
                 </div>
 
                 <!-- Section 2: Transmission Lines -->
@@ -253,14 +266,6 @@ window.MapView = {
                   <div class="legend-chip"><span style="display:inline-block; width:18px; height:3.5px; background:#1c1917; border-radius:2px;"></span> ±800kV / ±500kV HVDC Bulk Corridors</div>
                   <div class="legend-chip"><span style="display:inline-block; width:18px; height:2.5px; background:#78716c; border-radius:2px;"></span> 765 kV AC Super-Grid Backbone</div>
                   <div class="legend-chip"><span style="display:inline-block; width:18px; height:1.5px; border-top:2px dashed #a8a29e;"></span> 400 kV AC Regional Interconnection</div>
-                </div>
-
-                <!-- Section 3: Telemetry Status -->
-                <div class="legend-section-title" style="margin-top:0.45rem;">SCADA Operational Status</div>
-                <div class="legend-grid" style="grid-template-columns: repeat(3, 1fr);">
-                  <div class="legend-chip"><span class="status-dot healthy"></span> Nominal Synchronized</div>
-                  <div class="legend-chip"><span class="status-dot warning"></span> Elevated Load / Watch</div>
-                  <div class="legend-chip"><span class="status-dot critical"></span> Compromised / Threat</div>
                 </div>
               </div>
             </div>
@@ -370,9 +375,60 @@ window.MapView = {
               <div id="inspectorTransformersList" class="transformers-card-list">
                 <!-- Populated via JS -->
               </div>
+          </div>
+        </div>
+
+        <!-- Expandable Substation & Plant Asset Directory (59 Monitored Facilities) -->
+        <div class="disclosure-card" id="discCardAssetDirectory" style="margin-top:1.25rem;">
+          <div class="disclosure-header" onclick="window.MapView.toggleDisclosure('discCardAssetDirectory')">
+            <div class="disclosure-title">
+              <i class="fa-solid fa-server" style="color:#166534;"></i> Substation &amp; Bulk Generation Asset Directory (59 Nodes &bull; PGCIL / CEA Synchronous Grid)
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span style="font-size:0.75rem; color:var(--text-muted);">59 Monitored Facilities</span>
+              <i class="fa-solid fa-chevron-down disclosure-icon"></i>
+            </div>
+          </div>
+          <div class="disclosure-body">
+            <div style="margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+              <input type="text" id="assetDirectorySearch" class="soc-input" placeholder="Filter by asset ID, state, or voltage (e.g. Raigarh, 765kV, Maharashtra)..." style="width:100%; max-width:380px;" oninput="window.MapView.filterAssetTable(this.value)">
+              <span style="font-size:0.72rem; color:var(--text-muted);">Click <strong>Inspect</strong> to view live telemetry and center the interactive GIS map.</span>
+            </div>
+            <div class="soc-table-wrapper" style="max-height:300px; overflow-y:auto;">
+              <table class="soc-table" id="assetDirectoryTable">
+                <thead>
+                  <tr>
+                    <th>Asset ID</th>
+                    <th>Name &amp; Region</th>
+                    <th>Facility Type</th>
+                    <th>Voltage</th>
+                    <th>Capacity</th>
+                    <th>Operator</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(window.INDIA_GRID_DATA?.nodes || []).map(n => `
+                    <tr>
+                      <td class="mono-text" style="font-weight:700;">${n.id}</td>
+                      <td><strong>${n.name}</strong><br><span style="font-size:0.7rem; color:var(--text-muted);">${n.district || n.city || ''}, ${n.state} (${n.region})</span></td>
+                      <td style="text-transform:capitalize;">${(n.type || 'SUBSTATION').replace('_', ' ')}</td>
+                      <td class="mono-text">${n.voltage}</td>
+                      <td class="mono-text">${n.capacityMW ? n.capacityMW.toLocaleString() + ' MW' : 'N/A'}</td>
+                      <td>${n.operator || 'PGCIL'}</td>
+                      <td><span class="badge badge-${n.status === 'compromised' ? 'critical' : (n.status === 'suspicious' ? 'warning' : 'healthy')}">${n.status || 'HEALTHY'}</span></td>
+                      <td>
+                        <button class="btn btn-secondary btn-sm" style="padding:2px 8px; font-size:0.7rem;" onclick="window.MapView.inspectAssetNode('${n.id}')">Inspect</button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
+
       </div>
     `;
   },
@@ -1205,8 +1261,36 @@ window.MapView = {
       card.style.borderColor = '#b91c1c';
       alert(`[N-1 Contingency Simulation] Transformer Bay ${xfmrId} simulated trip. Load automatically redistributed across remaining parallel ICT bays in PIN ${pincode} without power outage.`);
     }
+  },
+
+  inspectAssetNode: (nodeId) => {
+    const data = window.INDIA_GRID_DATA || window.INDIA_MAP_DATA;
+    const node = data?.nodes?.find(n => n.id === nodeId);
+    if (node) {
+      window.MapView.updateNodeTelemetry(node);
+      if (window.app && window.app.indiaVisualizer) {
+        window.app.indiaVisualizer.selectNode(node);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  },
+
+  filterAssetTable: (query) => {
+    const q = (query || '').toLowerCase();
+    document.querySelectorAll('#assetDirectoryTable tbody tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  },
+
+  toggleDisclosure: (cardId) => {
+    const card = document.getElementById(cardId);
+    if (card) card.classList.toggle('open');
   }
 };
+
+// Unified Dashboard Aliases for Review 3 Consolidation
+window.DashboardView = window.MapView;
+window.AssetsView = window.MapView;
 
 
 // Close search dropdown if user clicks outside
@@ -1218,11 +1302,15 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Handle keyboard Escape to dismiss search dropdown
+// Close keyboard Escape to dismiss search dropdown
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     const dropdown = document.getElementById('mapSearchDropdown');
     if (dropdown) dropdown.style.display = 'none';
   }
 });
+
+// Consolidated Aliases for Review 3 Grid Dashboard Section
+window.DashboardView = window.MapView;
+window.AssetsView = window.MapView;
 

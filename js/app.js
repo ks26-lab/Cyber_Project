@@ -34,8 +34,99 @@ class GridSecApp {
     this.eventsProcessed = 48920;
     this.nationalFreq = 50.002;
 
+    this.activeNetwork = 'INDIA_GRID_59';
     this.initResilienceWorkflow();
     this.init();
+  }
+
+  switchNetwork(networkId) {
+    if (this.activeNetwork === networkId) return;
+    this.activeNetwork = networkId;
+
+    // 1. Update UI button styles
+    const btnIndia = document.getElementById('btnModelIndia');
+    const btnIEEE = document.getElementById('btnModelIEEE30');
+    if (btnIndia && btnIEEE) {
+      if (networkId === 'IEEE_30') {
+        btnIndia.classList.remove('active');
+        btnIndia.style.background = 'transparent';
+        btnIndia.style.color = '#57534e';
+        btnIEEE.classList.add('active');
+        btnIEEE.style.background = '#166534';
+        btnIEEE.style.color = '#fff';
+      } else {
+        btnIEEE.classList.remove('active');
+        btnIEEE.style.background = 'transparent';
+        btnIEEE.style.color = '#57534e';
+        btnIndia.classList.add('active');
+        btnIndia.style.background = '#166534';
+        btnIndia.style.color = '#fff';
+      }
+    }
+
+    // 2. Rebuild clean Graph Engine without carrying over state
+    this.graph = new GridGraph();
+    if (networkId === 'IEEE_30' && window.IEEE_30_DATA) {
+      (window.IEEE_30_DATA.nodes || []).forEach(n => {
+        this.graph.addNode({ ...n, riskScore: 10 });
+      });
+      (window.IEEE_30_DATA.corridors || []).forEach(c => {
+        this.graph.addEdge(c.from, c.to, {
+          distanceKm: c.distanceKm || 20,
+          lineLossMW: 2.0,
+          maxLoadMW: c.maxLoadMW || 100,
+          status: 'active'
+        });
+      });
+    } else {
+      if (window.GRID_DATA) this.graph.loadData(window.GRID_DATA);
+      if (window.INDIA_GRID_DATA && window.INDIA_GRID_DATA.nodes) {
+        window.INDIA_GRID_DATA.nodes.forEach(n => {
+          if (!this.graph.getNode(n.id)) {
+            this.graph.addNode({ ...n, riskScore: 10 });
+          }
+        });
+        if (window.INDIA_GRID_DATA.corridors) {
+          window.INDIA_GRID_DATA.corridors.forEach(c => {
+            this.graph.addEdge(c.from, c.to, {
+              distanceKm: c.distanceKm || 50,
+              lineLossMW: 10,
+              maxLoadMW: 1000,
+              status: c.status || 'active'
+            });
+          });
+        }
+      }
+    }
+    this.dsaEngine = new DsaEngine(this.graph);
+
+    // 3. Reset visualizer & infrastructure states cleanly
+    if (this.indiaVisualizer) {
+      this.indiaVisualizer.setNetwork(networkId);
+      this.indiaVisualizer.resetInfrastructureStates();
+      this.indiaVisualizer.fitNetwork();
+    }
+
+    // 4. Reset Simulator View & Dynamic Targets
+    if (window.SimulatorView && typeof window.SimulatorView.onNetworkSwitched === 'function') {
+      window.SimulatorView.onNetworkSwitched(networkId);
+    }
+
+    // 5. Update Network Analysis View if active
+    if (window.NetworkAnalysisView && typeof window.NetworkAnalysisView.onNetworkModelSwitched === 'function') {
+      window.NetworkAnalysisView.onNetworkModelSwitched(networkId);
+    }
+
+    // 6. If currently on a view that needs re-rendering
+    if (this.currentView === 'simulation') {
+      this.navigate('simulation');
+    } else if (this.currentView === 'dashboard') {
+      this.navigate('dashboard');
+    } else if (this.currentView === 'analysis') {
+      this.navigate('analysis');
+    }
+
+    console.log(`[GRIDSEC] Active model cleanly switched to ${networkId}. Topology & caches reset.`);
   }
 
   init() {
@@ -49,18 +140,45 @@ class GridSecApp {
     this.initLiveClock();
     this.initLiveTelemetryTicker();
     
-    // Check URL hash (e.g. app.html#map, app.html#dashboard) or default to 'map'
+    // Check URL hash (#dashboard, #simulation, #analysis) or default to 'dashboard'
     const hash = (window.location.hash || '').replace('#', '');
-    const validViews = ['map', 'dashboard', 'threats', 'investigation', 'network', 'simulator', 'cascade', 'assets'];
-    const initialView = validViews.includes(hash) ? hash : 'map';
+    const initialView = this.resolveViewName(hash);
     this.navigate(initialView);
 
     window.addEventListener('hashchange', () => {
       const newHash = (window.location.hash || '').replace('#', '');
-      if (validViews.includes(newHash) && newHash !== this.currentView) {
-        this.navigate(newHash);
+      const targetView = this.resolveViewName(newHash);
+      if (targetView !== this.currentView) {
+        this.navigate(targetView);
       }
     });
+  }
+
+  resolveViewName(rawName) {
+    if (!rawName) return 'dashboard';
+    const lower = rawName.toLowerCase();
+    if (lower === 'defender-intro' || lower === 'story' || lower === 'intro') {
+      return 'defender-intro';
+    }
+    const viewMap = {
+      'dashboard': 'dashboard',
+      'map': 'dashboard',
+      'assets': 'dashboard',
+      'simulation': 'simulation',
+      'simulator': 'simulation',
+      'cascade': 'simulation',
+      'defender': 'defender',
+      'grid-defender': 'defender',
+      'game': 'defender',
+      'analysis': 'analysis',
+      'network': 'analysis',
+      'investigation': 'analysis',
+      'threats': 'analysis',
+      'scheduling': 'scheduling',
+      'daily-scheduling': 'scheduling',
+      'load-scheduling': 'scheduling'
+    };
+    return viewMap[lower] || 'dashboard';
   }
 
   toggleSidebar() {
@@ -217,48 +335,70 @@ class GridSecApp {
   }
 
   navigate(viewName) {
-    this.currentView = viewName;
+    const target = this.resolveViewName(viewName);
+    this.currentView = target;
 
     document.querySelectorAll('.soc-nav-item').forEach(item => {
-      if (item.getAttribute('data-view') === viewName) {
+      const itemView = this.resolveViewName(item.getAttribute('data-view'));
+      if (itemView === target || (target === 'defender-intro' && itemView === 'defender')) {
         item.classList.add('active');
       } else {
         item.classList.remove('active');
       }
     });
 
+    // Clean up previous view resources if needed
+    if (this.currentView === 'analysis' && target !== 'analysis') {
+      if (window.NetworkAnalysisView && typeof window.NetworkAnalysisView.destroy === 'function') {
+        window.NetworkAnalysisView.destroy();
+      }
+    }
+
     const viewport = document.getElementById('socMainViewport');
     if (!viewport) return;
 
-    switch (viewName) {
+    switch (target) {
       case 'dashboard':
-        viewport.innerHTML = window.DashboardView.render(this);
+        viewport.innerHTML = window.DashboardView ? window.DashboardView.render(this) : (window.MapView ? window.MapView.render(this) : '');
         setTimeout(() => this.initIndiaMapCanvas(), 50);
         break;
-      case 'map':
-        viewport.innerHTML = window.MapView.render(this);
-        setTimeout(() => this.initIndiaMapCanvas(), 50);
+      case 'simulation':
+        viewport.innerHTML = window.SimulatorView ? window.SimulatorView.render(this) : '';
         break;
-      case 'threats':
-        viewport.innerHTML = window.ThreatsView.render(this);
+      case 'defender-intro':
+        viewport.innerHTML = window.DefenderIntroView ? window.DefenderIntroView.render(this) : '';
+        setTimeout(() => window.DefenderIntroView?.init(), 50);
         break;
-      case 'investigation':
-        viewport.innerHTML = window.InvestigateView.render(this);
+      case 'defender': {
+        const introSeen = sessionStorage.getItem('gridsec_defender_intro_seen') === 'true';
+        if (!introSeen && window.DefenderIntroView) {
+          viewport.innerHTML = window.DefenderIntroView.render(this);
+          setTimeout(() => window.DefenderIntroView.init(), 50);
+        } else {
+          viewport.innerHTML = window.DefenderView ? window.DefenderView.render(this) : '';
+          setTimeout(() => window.DefenderView?.init(), 50);
+        }
         break;
-      case 'network':
-        viewport.innerHTML = window.NetworkAnalysisView.render(this);
+      }
+      case 'analysis':
+        viewport.innerHTML = window.NetworkAnalysisView ? window.NetworkAnalysisView.render(this) : '';
+        setTimeout(() => {
+          if (window.NetworkAnalysisView && typeof window.NetworkAnalysisView.init === 'function') {
+            window.NetworkAnalysisView.init(this);
+          }
+        }, 50);
         break;
-      case 'simulator':
-        viewport.innerHTML = window.SimulatorView.render(this);
-        break;
-      case 'cascade':
-        viewport.innerHTML = window.CascadeView.render(this);
-        break;
-      case 'assets':
-        viewport.innerHTML = window.AssetsView.render(this);
+      case 'scheduling':
+        viewport.innerHTML = window.DailySchedulerView ? window.DailySchedulerView.render(this) : '';
+        setTimeout(() => {
+          if (window.DailySchedulerView && typeof window.DailySchedulerView.init === 'function') {
+            window.DailySchedulerView.init(this);
+          }
+        }, 50);
         break;
       default:
-        viewport.innerHTML = window.DashboardView.render(this);
+        viewport.innerHTML = window.DashboardView ? window.DashboardView.render(this) : '';
+        setTimeout(() => this.initIndiaMapCanvas(), 50);
     }
   }
 
@@ -313,10 +453,10 @@ class GridSecApp {
     // 1. Store pending highlight request in master app state
     this.pendingHighlight = { nodeIds, mode };
 
-    // 2. Navigate to Map view if not currently active
-    if (this.currentView !== 'map') {
-      window.location.hash = 'map';
-      this.navigate('map');
+    // 2. Navigate to Dashboard view if not currently active
+    if (this.currentView !== 'dashboard') {
+      window.location.hash = 'dashboard';
+      this.navigate('dashboard');
     }
 
     // 3. Apply highlight to map visualizer
@@ -503,9 +643,9 @@ class GridSecApp {
       status: wf.state
     };
 
-    if (this.currentView !== 'map') {
-      window.location.hash = 'map';
-      this.navigate('map');
+    if (this.currentView !== 'dashboard') {
+      window.location.hash = 'dashboard';
+      this.navigate('dashboard');
     } else {
       this.applyPendingMapHighlight();
     }

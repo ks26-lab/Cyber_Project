@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/map.css">
   <link rel="stylesheet" href="css/views.css">
+  <link rel="stylesheet" href="css/game.css">
 </head>
 <body>
 
@@ -41,6 +42,16 @@
     </div>
 
     <div class="soc-status-group">
+      <!-- Network Model Switcher (Part H: Multi-Model Architecture) -->
+      <div class="network-model-switch-pill" style="display:flex; align-items:center; background:#f5f5f4; border:1px solid #d6d3d1; border-radius:6px; padding:2px; gap:2px;">
+        <button id="btnModelIndia" class="btn-model-tab active" onclick="window.app.switchNetwork('INDIA_GRID_59')" style="padding:4px 10px; font-size:0.75rem; font-weight:700; border-radius:4px; border:none; background:#166534; color:#fff; cursor:pointer;">
+          <i class="fa-solid fa-earth-asia"></i> India 59-Node Grid
+        </button>
+        <button id="btnModelIEEE30" class="btn-model-tab" onclick="window.app.switchNetwork('IEEE_30')" style="padding:4px 10px; font-size:0.75rem; font-weight:600; border-radius:4px; border:none; background:transparent; color:#57534e; cursor:pointer;">
+          <i class="fa-solid fa-microchip"></i> IEEE 30-Bus Benchmark
+        </button>
+      </div>
+
       <!-- Live Real-Time Clock Widget -->
       <div class="soc-live-clock" id="headerLiveClock">
         <span class="live-pulse-dot"></span>
@@ -56,6 +67,10 @@
       <button class="btn btn-secondary btn-sm" id="btnHeaderRefresh" onclick="window.app.refreshScadaFeed()" title="Refresh live SCADA data telemetry">
         <i class="fa-solid fa-rotate" id="headerRefreshIcon"></i> Refresh Feed
       </button>
+
+      <a href="game.html" class="btn btn-primary" style="padding:0.35rem 0.85rem; font-size:0.8rem; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+        <i class="fa-solid fa-gamepad"></i> Standalone Game
+      </a>
 
       <a href="index.html" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.8rem;">
         <i class="fa-solid fa-arrow-left"></i> Landing Page
@@ -76,62 +91,40 @@
     <!-- Sidebar -->
     <aside class="soc-sidebar">
       <ul class="soc-nav-menu">
-        <li class="soc-nav-category">Monitoring</li>
+        <li class="soc-nav-category">Primary Modules</li>
         <li>
-          <a href="#" class="soc-nav-item active" data-view="dashboard">
-            <i class="fa-solid fa-gauge-high"></i>
-            <span>Dashboard</span>
-          </a>
-        </li>
-        <li>
-          <a href="#" class="soc-nav-item" data-view="map">
+          <a href="#dashboard" class="soc-nav-item active" data-view="dashboard" title="National Power Grid GIS Map & Telemetry">
             <i class="fa-solid fa-map-location-dot"></i>
-            <span>India Power Grid Map</span>
+            <span>Grid Dashboard</span>
             <span class="soc-nav-counter counter-neutral">National</span>
           </a>
         </li>
         <li>
-          <a href="#" class="soc-nav-item" data-view="threats">
-            <i class="fa-solid fa-shield-halved"></i>
-            <span>SCADA DPI Threats</span>
-            <span class="soc-nav-counter counter-danger">3 Active</span>
-          </a>
-        </li>
-
-        <li class="soc-nav-category">Incident &amp; Analysis</li>
-        <li>
-          <a href="#" class="soc-nav-item" data-view="investigation">
-            <i class="fa-solid fa-magnifying-glass-chart"></i>
-            <span>Investigation</span>
-            <span class="soc-nav-counter counter-warning">#INC-1042</span>
-          </a>
-        </li>
-        <li>
-          <a href="#" class="soc-nav-item" data-view="network">
-            <i class="fa-solid fa-route"></i>
-            <span>Network Analysis</span>
-          </a>
-        </li>
-        <li>
-          <a href="#" class="soc-nav-item" data-view="simulator">
+          <a href="#simulation" class="soc-nav-item" data-view="simulation" title="Cyber Attack Simulation & Cascading Failure Engine">
             <i class="fa-solid fa-crosshairs" style="color:#b91c1c;"></i>
-            <span>Attack Simulator</span>
+            <span>Simulation &amp; Response</span>
             <span class="soc-nav-counter counter-danger">Lab</span>
           </a>
         </li>
-        <li>
-          <a href="#" class="soc-nav-item" data-view="cascade">
-            <i class="fa-solid fa-diagram-project" style="color:#4f46e5;"></i>
-            <span>Cascade Visualizer</span>
-            <span class="soc-nav-counter" style="background:#e0e7ff; color:#4338ca;">Live</span>
+        <li style="margin-left:1.15rem; margin-top:-3px; margin-bottom:2px;">
+          <a href="#defender" class="soc-nav-item" data-view="defender" title="Grid Defender Interactive Strategy Game" style="font-size:0.77rem; padding:0.35rem 0.65rem;">
+            <i class="fa-solid fa-shield-halved" style="color:#15803d; font-size:0.8rem;"></i>
+            <span>Grid Defender</span>
+            <span class="soc-nav-counter" style="background:#ecfdf5; color:#15803d; font-size:0.62rem; font-weight:700;">Game</span>
           </a>
         </li>
-
-        <li class="soc-nav-category">Infrastructure</li>
         <li>
-          <a href="#" class="soc-nav-item" data-view="assets">
-            <i class="fa-solid fa-server"></i>
-            <span>Substation Assets</span>
+          <a href="#analysis" class="soc-nav-item" data-view="analysis" title="Transmission Routing, Islanding & Graph DSA">
+            <i class="fa-solid fa-route" style="color:#166534;"></i>
+            <span>Analysis &amp; Results</span>
+            <span class="soc-nav-counter" style="background:#f0fdf4; color:#15803d;">DSA</span>
+          </a>
+        </li>
+        <li>
+          <a href="#scheduling" class="soc-nav-item" data-view="scheduling" title="Priority-Aware Power Deficit Scheduler Using DSA">
+            <i class="fa-solid fa-calendar-day" style="color:#0284c7;"></i>
+            <span>Daily Load Scheduling</span>
+            <span class="soc-nav-counter" style="background:#e0f2fe; color:#0369a1;">Review 1</span>
           </a>
         </li>
       </ul>
@@ -181,22 +174,33 @@
     }
   </script>
 
-  <!-- Core Scripts -->
   <script src="js/data/gridData.js"></script>
   <script src="js/data/indiaGridData.js"></script>
+  <script src="js/data/ieee30Data.js"></script>
+  <script src="js/data/trainingGridData.js"></script>
+  <script src="js/data/cityMappingData.js"></script>
   <script src="js/data/threatData.js"></script>
   <script src="js/engine/graph.js"></script>
   <script src="js/engine/dsaEngine.js"></script>
   <script src="js/visualizer/gridCanvas.js"></script>
   <script src="js/visualizer/indiaMapVisualizer.js"></script>
-  <script src="js/views/dashboardView.js"></script>
+  <script src="js/visualizer/trainingGraphVisualizer.js"></script>
   <script src="js/views/mapView.js"></script>
+  <script src="js/views/dashboardView.js"></script>
+  <script src="js/views/assetsView.js"></script>
+  <script src="js/views/simulatorView.js"></script>
+  <script src="js/views/dailySchedulerView.js"></script>
+  <script src="js/engine/characterDialogue.js"></script>
+  <script src="js/engine/soundEngine.js"></script>
+  <script src="js/engine/gameStorage.js"></script>
+  <script src="js/engine/attackEscalation.js"></script>
+  <script src="js/engine/storyEngine.js"></script>
+  <script src="js/views/defenderIntroView.js"></script>
+  <script src="js/views/defenderView.js"></script>
+  <script src="js/views/cascadeView.js"></script>
+  <script src="js/views/networkAnalysisView.js"></script>
   <script src="js/views/threatsView.js"></script>
   <script src="js/views/investigateView.js"></script>
-  <script src="js/views/networkAnalysisView.js"></script>
-  <script src="js/views/simulatorView.js"></script>
-  <script src="js/views/cascadeView.js"></script>
-  <script src="js/views/assetsView.js"></script>
   <script src="js/interactions.js"></script>
   <script src="js/app.js"></script>
 </body>

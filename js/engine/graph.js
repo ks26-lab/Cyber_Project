@@ -15,11 +15,12 @@ class GridGraph {
     this.adjacency.clear();
     this.edges = [];
 
-    gridData.nodes.forEach(n => {
+    (gridData.nodes || []).forEach(n => {
       this.addNode({ ...n });
     });
 
-    gridData.edges.forEach(e => {
+    const edgeList = gridData.edges || gridData.corridors || [];
+    edgeList.forEach(e => {
       this.addEdge(e.from, e.to, e);
     });
   }

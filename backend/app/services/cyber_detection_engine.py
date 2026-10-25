@@ -181,6 +181,54 @@ class CyberDetectionEngine:
                 "security_status": "SECURE",
                 "risk_score": 25.0
             })
+
+            # Index IEEE 30 Benchmark System elements into Hash Table
+            try:
+                from app.power.ieee30_network import get_ieee30_benchmark_network
+                from app.power.models import BusType
+                ieee_data = get_ieee30_benchmark_network()
+                for b in ieee_data.get("buses", []):
+                    self._hash_table.insert_asset({
+                        "id": b.bus_id,
+                        "name": b.name,
+                        "type": "SUBSTATION" if b.bus_type != BusType.SLACK else "GENERATOR",
+                        "voltage_kv": f"{b.voltage_kv}kV",
+                        "capacity_mw": 500.0,
+                        "current_mw": float(b.load_P or 0.0),
+                        "status": "ONLINE",
+                        "security_status": "SECURE",
+                        "risk_score": 15.0
+                    })
+                for l in ieee_data.get("lines", []):
+                    self._hash_table.insert_asset({
+                        "id": l.line_id,
+                        "name": l.name,
+                        "type": "TRANSMISSION_LINE",
+                        "voltage_kv": f"{l.voltage_kv}kV",
+                        "capacity_mw": float(l.thermal_limit_mw or 100.0),
+                        "current_mw": float(l.thermal_limit_mw or 100.0) * 0.4,
+                        "status": "IN_SERVICE",
+                        "security_status": "SECURE",
+                        "risk_score": 20.0
+                    })
+                for x in ieee_data.get("transformers", []):
+                    self._hash_table.insert_asset({
+                        "id": x.transformer_id,
+                        "name": x.name,
+                        "type": "TRANSFORMER",
+                        "voltage_kv": f"{x.primary_kv:.0f}/{x.secondary_kv:.0f}kV",
+                        "rating_mva": float(x.rated_mva or 100.0),
+                        "primary_kv": float(x.primary_kv or 132.0),
+                        "secondary_kv": float(x.secondary_kv or 33.0),
+                        "tap_position": x.tap_position or 0,
+                        "tap_min": -10,
+                        "tap_max": 10,
+                        "status": "IN_SERVICE",
+                        "security_status": "SECURE",
+                        "risk_score": 25.0
+                    })
+            except Exception as e:
+                logger.warning(f"Could not index IEEE 30 elements into hash table: {e}")
         return self._hash_table
 
     def get_scenario_definitions(self) -> List[SyntheticScenarioDefinition]:
@@ -770,7 +818,8 @@ class CyberDetectionEngine:
         inference: DetectionInference,
         sim_id: Optional[str],
         apply_physical: bool,
-        db: Session
+        db: Session,
+        baseline_network: str = "TEST_NETWORK"
     ) -> Tuple[str, Optional[Dict[str, Any]], List[Dict[str, Any]], Optional[Dict[str, Any]], Optional[TransformerTapImpactResult]]:
         """
         Executes physical state modification strictly inside the sandbox simulation.
@@ -799,7 +848,7 @@ class CyberDetectionEngine:
                 name=f"Cyber Drill: {inference.classification} on {target_asset}",
                 scenario_type="CYBER_ATTACK",
                 target_asset_id=target_asset,
-                baseline_reference="TEST_NETWORK"
+                baseline_reference=baseline_network
             )
             created_scen = simulation_state_service.create_scenario(scenario_req, db)
             sim_id = created_scen.simulation_id
@@ -815,7 +864,7 @@ class CyberDetectionEngine:
             is_tap_valid = (tap_min <= req_tap <= tap_max)
 
             # 1. Baseline Power Flow (Nominal tap)
-            base_req = PowerFlowRequest(network_id="TEST_NETWORK", scenario_id=f"{sim_id}_BASELINE")
+            base_req = PowerFlowRequest(network_id=baseline_network, scenario_id=f"{sim_id}_BASELINE")
             base_res = power_flow_service.run_or_stage_power_flow(base_req, db, state_overrides={})
             base_v_map = {b.bus_id: round(b.voltage_pu, 4) for b in base_res.buses}
             base_line_map = {l.line_id: round(l.loading_percent, 1) for l in base_res.lines}
@@ -972,16 +1021,19 @@ class CyberDetectionEngine:
 
         if not should_trip:
             # Physical truth remains unchanged; nominal AC power flow verified in sandbox
+            base_pf_chk = power_flow_service.run_or_stage_power_flow(PowerFlowRequest(network_id=baseline_network, scenario_id=f"{sim_id}_NOMINAL"), db, state_overrides={})
+            nom_gen = round(base_pf_chk.power_balance.total_generation_mw, 2) if base_pf_chk.power_balance else 0.0
+            nom_loss = round(base_pf_chk.power_balance.total_losses_mw, 4) if base_pf_chk.power_balance else 0.0
             nominal_power_flow = {
                 "status": "UNCHANGED_NOMINAL",
                 "simulation_id": sim_id,
                 "tripped_asset": "NONE",
                 "new_violations_count": 0,
                 "generated_physical_events": [],
-                "power_balance": 1105.83,
-                "total_losses_mw": 5.832,
-                "branch_loading_percent": {},
-                "bus_voltages_pu": {},
+                "power_balance": nom_gen,
+                "total_losses_mw": nom_loss,
+                "branch_loading_percent": {l.line_id: round(l.loading_percent, 1) for l in base_pf_chk.lines},
+                "bus_voltages_pu": {b.bus_id: round(b.voltage_pu, 4) for b in base_pf_chk.buses},
                 "dijkstra_alternate_route": None,
                 "connected_components_count": 1,
                 "islanding_status": "NO_ISLANDING_DETECTED",
@@ -1029,6 +1081,14 @@ class CyberDetectionEngine:
             if line_db:
                 src_bus = line_db.source_asset_id
                 dst_bus = line_db.destination_asset_id
+            elif target_asset.startswith("LINE-"):
+                parts = target_asset.replace("LINE-", "").split("-")
+                if len(parts) >= 2:
+                    src_bus = f"BUS-{parts[0]}" if not parts[0].startswith("BUS") else parts[0]
+                    dst_bus = f"BUS-{parts[1]}" if not parts[1].startswith("BUS") else parts[1]
+                else:
+                    src_bus = "BUS-1"
+                    dst_bus = "BUS-3"
             elif "1-3" in target_asset:
                 src_bus = "BUS-1"
                 dst_bus = "BUS-3"
@@ -1333,7 +1393,8 @@ class CyberDetectionEngine:
             self._broadcast_stage_update(stage_name, entry)
 
         # Baseline Power Flow Assessment (for before/after comparison and FDIA baseline)
-        base_req = PowerFlowRequest(network_id="TEST_NETWORK", scenario_id="BASELINE_ASSESSMENT")
+        net_id = getattr(request, "baseline_network", None) or "TEST_NETWORK"
+        base_req = PowerFlowRequest(network_id=net_id, scenario_id="BASELINE_ASSESSMENT")
         baseline_pf = power_flow_service.run_or_stage_power_flow(base_req, db, state_overrides={})
         base_gen = round(baseline_pf.power_balance.total_generation_mw, 2) if baseline_pf.power_balance else 1102.96
         base_load = round(baseline_pf.power_balance.total_load_mw, 2) if baseline_pf.power_balance else 1100.0
@@ -1345,7 +1406,7 @@ class CyberDetectionEngine:
         # Dynamic Target Resolution if not provided or AUTO
         seed = request.seed
         if not request.target_asset_id or request.target_asset_id == "AUTO":
-            request.target_asset_id = DynamicTargetSelector.select_target(request.scenario_id, seed=seed, db=db)
+            request.target_asset_id = DynamicTargetSelector.select_target(request.scenario_id, seed=seed, db=db, network_id=net_id)
 
         # Attack 2 (FDIA): Dynamically compute expected baseline measurement from real baseline solver state if missing
         is_fdia_candidate = (
@@ -1649,8 +1710,8 @@ class CyberDetectionEngine:
                 },
                 physical_impact_confirmed=True,
                 tripped_corridors=[campaign_targets[2]] if len(campaign_targets) > 2 else ["LINE-1-3"],
-                recalculated_losses_mw=5.832,
-                recalculated_generation_mw=1105.83,
+                recalculated_losses_mw=base_loss,
+                recalculated_generation_mw=base_gen,
                 voltage_violations_count=0,
                 line_overload_count=0,
                 islanding_status="NO_ISLANDING_DETECTED",
@@ -1736,14 +1797,15 @@ class CyberDetectionEngine:
                 inference,
                 sim_id,
                 True,
-                db
+                db,
+                baseline_network=net_id
             )
             tap_impact = None
 
             # Re-solve to get latest PowerFlowResult for validator
             try:
                 latest_pf_result = power_flow_service.run_or_stage_power_flow(
-                    PowerFlowRequest(network_id="TEST_NETWORK", scenario_id=sim_id),
+                    PowerFlowRequest(network_id=net_id, scenario_id=sim_id),
                     db,
                     state_overrides={trip_line: "OUT_OF_SERVICE"}
                 )
@@ -1753,8 +1815,8 @@ class CyberDetectionEngine:
             _log_stage("SANDBOX_POWER_FLOW_SOLVED", f"Physical consequence executed: Breaker open command on {trip_line}; Newton-Raphson AC power flow re-solved in sandbox.", {
                 "tripped_corridor": trip_line,
                 "simulation_id": sim_id,
-                "recalculated_generation_mw": power_flow_impact.get("power_balance") if power_flow_impact else 1105.83,
-                "recalculated_losses_mw": power_flow_impact.get("total_losses_mw") if power_flow_impact else 5.832
+                "recalculated_generation_mw": power_flow_impact.get("power_balance") if power_flow_impact else base_gen,
+                "recalculated_losses_mw": power_flow_impact.get("total_losses_mw") if power_flow_impact else base_loss
             })
             _log_stage("PHYSICAL_IMPACT_ANALYZED", f"Physical impact analyzed: {len(violations)} violations, losses={power_flow_impact.get('total_losses_mw')} MW, islanding={power_flow_impact.get('islanding_status')}.", {
                 "power_flow_impact": power_flow_impact,
@@ -1796,13 +1858,14 @@ class CyberDetectionEngine:
                 inference,
                 sim_id,
                 request.apply_physical_consequence,
-                db
+                db,
+                baseline_network=net_id
             )
             
             if is_config_scenario and tap_impact and tap_impact.is_tap_valid:
                 try:
                     latest_pf_result = power_flow_service.run_or_stage_power_flow(
-                        PowerFlowRequest(network_id="TEST_NETWORK", scenario_id=sim_id),
+                        PowerFlowRequest(network_id=net_id, scenario_id=sim_id),
                         db,
                         state_overrides={request.target_asset_id: {"tap_position": tap_impact.requested_tap}}
                     )
@@ -1828,7 +1891,7 @@ class CyberDetectionEngine:
             elif power_flow_impact and power_flow_impact.get("status") == "SOLVED_IN_SANDBOX":
                 try:
                     latest_pf_result = power_flow_service.run_or_stage_power_flow(
-                        PowerFlowRequest(network_id="TEST_NETWORK", scenario_id=sim_id),
+                        PowerFlowRequest(network_id=net_id, scenario_id=sim_id),
                         db,
                         state_overrides={request.target_asset_id: "OUT_OF_SERVICE"}
                     )

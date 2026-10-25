@@ -56,6 +56,12 @@ def list_available_networks() -> List[Dict[str, str]]:
             "name": "59-Node Indian National Grid Reference Model",
             "category": "NATIONAL_REFERENCE",
             "description": "59 bulk substations/power plants with 54 high-voltage transmission corridors & 85 transformer bays"
+        },
+        {
+            "network_id": "IEEE_30",
+            "name": "IEEE 30-Bus Transmission Benchmark System",
+            "category": "BENCHMARK_STANDARD",
+            "description": "Standard 30-bus MATPOWER/AEP benchmark system (6 generators, 21 loads, 37 lines, 4 OLTC transformers)"
         }
     ]
 
@@ -71,6 +77,8 @@ def get_electrical_network(network_id: str, db: Session = Depends(get_db)) -> Di
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error building electrical network: {str(e)}")
 
 
@@ -82,7 +90,7 @@ def run_power_flow(request: PowerFlowRequest, db: Session = Depends(get_db)) -> 
     system transmission losses, and checks Kirchhoff power balance.
     """
     try:
-        return power_flow_service.run_or_stage_power_flow(request, db)
+        return power_flow_service.run_or_stage_power_flow(request, db, state_overrides=request.state_overrides)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
