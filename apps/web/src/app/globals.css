@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --bg-obsidian: #06090f;
+  --bg-panel: #0b111c;
+  --bg-card: #111a29;
+  --accent-cyan: #22d3ee;
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-crimson: #ef4444;
+  --accent-violet: #8b5cf6;
+  --accent-sky: #38bdf8;
+}
+
+body {
+  background-color: #06090f;
+  color: #f8fafc;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom sleek engineering scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #06090f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+.scada-grid-bg {
+  background-image: linear-gradient(to right, rgba(30, 41, 59, 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.22) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.scada-panel {
+  background: rgba(11, 17, 28, 0.92);
+  border: 1px solid rgba(51, 65, 85, 0.55);
+  backdrop-filter: blur(12px);
+}
+

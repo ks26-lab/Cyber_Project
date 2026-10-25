@@ -22,6 +22,10 @@ from app.power.models import (
 )
 from app.power.test_networks import get_benchmark_4bus_test_network
 from app.power.ieee30_network import get_ieee30_benchmark_network
+from app.power.distribution_networks import (
+    build_training_feeder_network,
+    build_ieee33_distribution_network,
+)
 
 
 # CEA Standard Conductor Benchmarks for Representative ACSR lines
@@ -63,6 +67,16 @@ class ElectricalNetworkBuilder:
     def build_ieee30_network(cls) -> Dict[str, Any]:
         """Returns the authenticated IEEE 30-bus transmission benchmark network."""
         return get_ieee30_benchmark_network()
+
+    @classmethod
+    def build_training_feeder_network(cls) -> Dict[str, Any]:
+        """Returns the 12-bus Smart City Distribution Feeder (33/11 kV) benchmark network."""
+        return build_training_feeder_network()
+
+    @classmethod
+    def build_ieee33_network(cls) -> Dict[str, Any]:
+        """Returns the IEEE 33-Bus (Baran & Wu 1989) 12.66 kV radial distribution system."""
+        return build_ieee33_distribution_network()
 
     @classmethod
     def build_india_grid_electrical_model(cls, db: Session) -> Dict[str, Any]:

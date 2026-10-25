@@ -66,9 +66,9 @@ def extract_solver_metrics(pf_res: Optional[PowerFlowResult]) -> Dict[str, Any]:
     trafo_loadings = [t.loading_percent for t in pf_res.transformers if getattr(t, "loading_percent", None) is not None]
     max_trafo_loading = max(trafo_loadings) if trafo_loadings else 0.0
     
-    losses = getattr(pf_res.power_balance, "total_losses_p_mw", 0.0) or 0.0
-    gen_p = getattr(pf_res.power_balance, "total_gen_p_mw", 0.0) or 0.0
-    load_p = getattr(pf_res.power_balance, "total_load_p_mw", 0.0) or 0.0
+    losses = getattr(pf_res.power_balance, "total_losses_mw", getattr(pf_res.power_balance, "total_losses_p_mw", 0.0)) or 0.0
+    gen_p = getattr(pf_res.power_balance, "total_generation_mw", getattr(pf_res.power_balance, "total_gen_p_mw", 0.0)) or 0.0
+    load_p = getattr(pf_res.power_balance, "total_load_mw", getattr(pf_res.power_balance, "total_load_p_mw", 0.0)) or 0.0
     converged = getattr(pf_res.power_balance, "converged", pf_res.status == "SUCCESS")
     iterations = getattr(pf_res.power_balance, "iterations", 4)
     

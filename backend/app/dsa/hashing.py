@@ -138,3 +138,63 @@ class AssetIndexTable:
                 matched_ids.add(aid)
 
         return [self.by_id[aid] for aid in matched_ids if aid in self.by_id]
+
+    def search_by_name(self, name_query: str) -> List[Dict[str, Any]]:
+        return self.general_search(name_query)
+
+
+class _TrieNode:
+    def __init__(self) -> None:
+        self.children: Dict[str, "_TrieNode"] = {}
+        self.asset_ids: List[str] = []
+
+
+class PincodeTrie:
+    """Prefix Trie for O(L) prefix autocomplete on substation codes and pincodes."""
+
+    def __init__(self) -> None:
+        self.root = _TrieNode()
+
+    def insert(self, key: str, asset_id: str) -> None:
+        node = self.root
+        for ch in str(key).upper():
+            if ch not in node.children:
+                node.children[ch] = _TrieNode()
+            node = node.children[ch]
+            if asset_id not in node.asset_ids:
+                node.asset_ids.append(asset_id)
+
+    def search_prefix(self, prefix: str) -> List[str]:
+        node = self.root
+        for ch in str(prefix).upper():
+            if ch not in node.children:
+                return []
+            node = node.children[ch]
+        return list(node.asset_ids)
+
+
+class CircularTelemetryBuffer:
+    """Fixed-capacity O(1) circular ring buffer for high-rate PMU synchrophasor streams."""
+
+    def __init__(self, capacity: int = 16) -> None:
+        self.capacity = max(1, capacity)
+        self._buf: List[Optional[Dict[str, Any]]] = [None] * self.capacity
+        self._write_ptr: int = 0
+        self._count: int = 0
+
+    def append(self, sample: Dict[str, Any]) -> None:
+        self._buf[self._write_ptr] = sample
+        self._write_ptr = (self._write_ptr + 1) % self.capacity
+        self._count = min(self.capacity, self._count + 1)
+
+    def get_latest(self, n: int = 8) -> List[Dict[str, Any]]:
+        k = min(n, self._count)
+        out: List[Dict[str, Any]] = []
+        for i in range(k):
+            idx = (self._write_ptr - 1 - i) % self.capacity
+            val = self._buf[idx]
+            if val is not None:
+                out.append(val)
+        out.reverse()
+        return out
+
