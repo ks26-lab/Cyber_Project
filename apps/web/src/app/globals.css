@@ -1,55 +1,522 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 :root {
-  color-scheme: dark;
-  --bg-obsidian: #06090f;
-  --bg-panel: #0b111c;
-  --bg-card: #111a29;
-  --accent-cyan: #22d3ee;
-  --accent-emerald: #10b981;
-  --accent-amber: #f59e0b;
-  --accent-crimson: #ef4444;
-  --accent-violet: #8b5cf6;
-  --accent-sky: #38bdf8;
+  color-scheme: light;
+  --ink: #172b40;
+  --accent: #244f8f;
+  --line: #dde5ed;
+  --muted: #66788b;
+  --surface: #fff;
 }
-
+* {
+  box-sizing: border-box;
+}
 body {
-  background-color: #06090f;
-  color: #f8fafc;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  overflow-x: hidden;
+  margin: 0;
+  background: #f5f7fa;
+  color: var(--ink);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
 }
-
-/* Custom sleek engineering scrollbars */
+button,
+a,
+input,
+select,
+summary {
+  touch-action: manipulation;
+}
+button,
+select,
+summary {
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+button,
+a,
+select,
+input {
+  outline-offset: 4px;
+}
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid #244f8f;
+}
+h1,
+h2,
+h3 {
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+p {
+  line-height: 1.7;
+}
+main > div {
+  width: 100%;
+  max-width: 1680px;
+  margin-inline: auto;
+}
+.scada-grid-bg {
+  background: none;
+}
+.scada-panel {
+  background: white;
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 6px #253b501a;
+}
+pre,
+code {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+pre {
+  line-height: 1.75;
+}
+summary {
+  font-weight: 600;
+  padding: 8px 0;
+  color: #244f8f;
+}
+details[open] > summary {
+  margin-bottom: 14px;
+}
+table {
+  border-collapse: collapse;
+}
+td,
+th {
+  padding: 12px !important;
+}
+th {
+  font-weight: 500;
+}
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-
-::-webkit-scrollbar-track {
-  background: #06090f;
-}
-
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 3px;
+  background: #c4ced8;
+  border-radius: 8px;
 }
-
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+.site-header {
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
-
-.scada-grid-bg {
-  background-image: linear-gradient(to right, rgba(30, 41, 59, 0.22) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(30, 41, 59, 0.22) 1px, transparent 1px);
-  background-size: 28px 28px;
+.brand-row {
+  max-width: 1600px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  padding: 19px 40px;
 }
-
-.scada-panel {
-  background: rgba(11, 17, 28, 0.92);
-  border: 1px solid rgba(51, 65, 85, 0.55);
-  backdrop-filter: blur(12px);
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
 }
-
+.brand-icon {
+  background: #244f8f;
+  color: white;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+}
+.brand-caption {
+  font-size: 12px;
+  color: var(--muted);
+}
+.quiet-button {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: white;
+  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #40566e;
+  font-size: 12px;
+}
+.presentation-toggle {
+  margin-left: auto;
+}
+.primary-nav {
+  max-width: 1600px;
+  margin: auto;
+  display: flex;
+  gap: 27px;
+  padding: 0 40px;
+  align-items: center;
+}
+.primary-nav > a {
+  padding: 12px 0;
+  color: #66788b;
+  font-size: 13px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.primary-nav > a[aria-current] {
+  color: #244f8f;
+  border-color: #244f8f;
+  font-weight: 650;
+}
+.more-nav {
+  margin-left: auto;
+  position: relative;
+}
+.more-nav summary {
+  font-size: 13px;
+  color: #66788b;
+  padding: 10px;
+}
+.more-nav > div {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  background: white;
+  border: 1px solid var(--line);
+  width: 190px;
+  padding: 12px;
+  box-shadow: 0 12px 30px #172b4020;
+  border-radius: 8px;
+}
+.more-nav a {
+  display: block;
+  padding: 7px;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #617a93;
+  font-weight: 650;
+}
+.page-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 26px;
+}
+.page-heading h1 {
+  font-size: 30px;
+  font-weight: 650;
+  margin: 7px 0;
+}
+.page-heading p {
+  color: #66788b;
+  max-width: 650px;
+}
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #244f8f;
+  color: white;
+  border: 1px solid #244f8f;
+  padding: 12px 18px;
+  border-radius: 7px;
+  font-weight: 550;
+}
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: white;
+  color: #244f8f;
+  border: 1px solid var(--line);
+  padding: 12px 18px;
+  border-radius: 7px;
+}
+.hero-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  gap: 65px;
+  align-items: center;
+  padding: 58px 0 50px;
+}
+.hero-title {
+  font-size: clamp(38px, 4.2vw, 64px);
+  font-weight: 650;
+  letter-spacing: -0.05em;
+  line-height: 1.12;
+  margin: 22px 0;
+}
+.hero-copy {
+  font-size: 17px;
+  color: #66788b;
+  max-width: 520px;
+}
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+.module-card {
+  padding: 28px;
+  border: 1px solid var(--line);
+  background: white;
+  border-radius: 12px;
+}
+.module-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 18px 0 12px;
+}
+.module-card p {
+  color: #66788b;
+  font-size: 14px;
+}
+.module-card a {
+  display: inline-block;
+  color: #244f8f;
+  margin-top: 22px;
+  font-weight: 600;
+}
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.metric-strip > div {
+  padding: 17px 24px;
+  border-right: 1px solid var(--line);
+}
+.metric-strip small {
+  color: var(--muted);
+  display: block;
+}
+.metric-strip strong {
+  font-size: 24px;
+  font-weight: 600;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 260px;
+  gap: 20px;
+}
+.workspace aside {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 23px;
+  align-self: start;
+}
+.workspace label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 22px 0 8px;
+}
+.workspace select {
+  width: 100%;
+  padding: 9px;
+  background: #f6f8fb;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.map-surface {
+  background: #eef3f6;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+.map-surface svg {
+  width: 100%;
+  height: 610px;
+}
+.map-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  background: white;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--muted);
+}
+.state-shape {
+  fill: #dce5eb;
+  stroke: #fff;
+  stroke-width: 0.45;
+  transition: fill 0.15s;
+}
+.state-shape:hover,
+.state-shape.selected {
+  fill: #b4cbdc;
+}
+.node-dot {
+  cursor: pointer;
+  stroke: white;
+  stroke-width: 1.5;
+}
+.node-dot:hover {
+  stroke: #244f8f;
+  stroke-width: 3;
+}
+.detail-stat {
+  border-top: 1px solid var(--line);
+  padding: 14px 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.visual-title {
+  padding: 18px 22px;
+  background: white;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.city-label-detail {
+  display: none;
+}
+.city-label:hover .city-label-detail,
+.city-label.selected .city-label-detail {
+  display: block;
+}
+[data-presentation="true"] .brand-caption,
+[data-presentation="true"] .primary-nav,
+[data-presentation="true"] .presentation-hide {
+  display: none !important;
+}
+[data-presentation="true"] .site-header {
+  position: relative;
+}
+[data-presentation="true"] .presentation-expand {
+  grid-column: 1/-1 !important;
+}
+[data-presentation="true"] [data-testid="city-canvas-3d"] {
+  height: calc(100vh - 220px) !important;
+  min-height: 460px;
+}
+[data-presentation="true"] .map-surface svg {
+  height: calc(100vh - 270px);
+  min-height: 440px;
+}
+.bg-gradient-to-r,
+.bg-gradient-to-br {
+  background-image: none;
+}
+.h-3 > div {
+  background: #7596b6;
+}
+.h-3 > div.bg-gradient-to-r {
+  background: #244f8f;
+}
+.shadow-2xl {
+  box-shadow: 0 5px 20px #233e5010;
+}
+@media (max-width: 1000px) {
+  .workspace {
+    grid-template-columns: 180px 1fr;
+  }
+  .workspace aside:last-child {
+    grid-column: 1/-1;
+  }
+  .hero-layout {
+    gap: 30px;
+  }
+  .brand-caption {
+    display: none;
+  }
+  .primary-nav {
+    gap: 20px;
+    overflow-x: auto;
+  }
+  .module-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .brand-row {
+    padding: 14px 18px;
+  }
+  .brand {
+    font-size: 12px;
+  }
+  .primary-nav {
+    padding: 0 18px;
+    gap: 20px;
+  }
+  .hero-layout {
+    grid-template-columns: 1fr;
+    padding-top: 24px;
+  }
+  .module-grid,
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .metric-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .map-surface svg {
+    height: 470px;
+  }
+  .page-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+  .hero-copy {
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.grid > *,
+.flex-1 {
+  min-width: 0;
+}
+select {
+  max-width: 100%;
+}
+h1 {
+  overflow-wrap: anywhere;
+}
+.scada-panel > div.flex {
+  flex-wrap: wrap;
+}
+.city-label {
+  font-size: 10px !important;
+  box-shadow: 0 1px 4px #2341 !important;
+}
+.city-label.selected {
+  font-size: 11px !important;
+}
+.map-surface svg {
+  touch-action: pan-y;
+}
+/* Keep the full map and legend in the presentation viewport. */
+[data-presentation="true"] .map-surface svg {
+  height: calc(100dvh - 410px);
+  min-height: 380px;
+}
+[data-presentation="true"] [data-testid="city-canvas-3d"] {
+  height: calc(100dvh - 390px) !important;
+}

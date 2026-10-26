@@ -14,7 +14,9 @@ export default function HumanVsAlgorithmChallengePage() {
   const evaluateHeadToHead = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/gridzero/challenge/compare", { method: "POST" });
+      const res = await fetch("/api/gridzero/challenge/compare", {
+        method: "POST",
+      });
       if (res.ok) {
         const data = await res.json();
         setChallengeData(data);
@@ -106,37 +108,41 @@ export default function HumanVsAlgorithmChallengePage() {
   ];
 
   return (
-    <div className="flex-1 scada-grid-bg p-4 lg:p-6 space-y-5">
-      <div className="scada-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 border-amber-500/30">
+    <div className="flex-1 scada-grid-bg p-5 lg:p-10 space-y-5">
+      <div className="scada-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 border-amber-200">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/15 px-3 py-1 border border-amber-500/30 font-mono text-xs text-amber-300 mb-1.5">
+          <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 border border-amber-200 font-sans text-xs text-amber-700 mb-1.5">
             HUMAN-VS-ALGORITHM CHALLENGE ARENA
           </div>
-          <h1 className="text-2xl font-extrabold text-white">
-            Head-to-Head Dispatcher Challenge: Human Operator vs. CAPER & 4 Baselines
+          <h1 className="text-2xl font-extrabold text-slate-900">
+            Head-to-Head Dispatcher Challenge: Human Operator vs. CAPER & 4
+            Baselines
           </h1>
-          <p className="text-xs text-slate-300 mt-1">
-            Operate the 3D city switches, batteries, and load curtailment manually, then compare your live physical outcome against CAPER, MILP-Reference, AC-Greedy, Graph-Greedy, and Priority-Greedy on the exact same contingency!
+          <p className="text-xs text-slate-600 mt-1">
+            Operate the 3D city switches, batteries, and load curtailment
+            manually, then compare your live physical outcome against CAPER,
+            MILP-Reference, AC-Greedy, Graph-Greedy, and Priority-Greedy on the
+            exact same contingency!
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => resetSession("TRAINING_FEEDER", "MISSION_03", 7.2)}
-            className="rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 px-3.5 py-2 font-mono text-xs font-bold text-amber-200 transition"
+            className="rounded-lg bg-amber-50 hover:bg-amber-50 border border-amber-200 px-3.5 py-2 font-sans text-xs font-bold text-amber-700 transition"
           >
             Load Crisis Scenario (Mission 03 + 7.2 MW Cap)
           </button>
           <button
             onClick={evaluateHeadToHead}
             disabled={loading}
-            className="rounded-lg bg-cyan-500 hover:bg-cyan-400 px-4 py-2 font-mono text-xs font-bold text-slate-950 transition"
+            className="rounded-lg bg-blue-800 hover:bg-blue-800 px-4 py-2 font-sans text-xs font-bold text-white transition"
           >
             Score My Solution vs. AI
           </button>
           <button
             onClick={() => applyRestorationPlan("CAPER")}
-            className="rounded-lg bg-violet-600 hover:bg-violet-500 px-3.5 py-2 font-mono text-xs font-bold text-white transition"
+            className="rounded-lg bg-blue-800 hover:bg-blue-800 px-3.5 py-2 font-sans text-xs font-bold text-white transition"
           >
             Show CAPER Optimal Move
           </button>
@@ -145,18 +151,20 @@ export default function HumanVsAlgorithmChallengePage() {
 
       {/* Head-to-Head Leaderboard Table */}
       <div className="scada-panel rounded-xl p-5">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
-          <h2 className="font-mono text-sm font-bold text-white flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-400" /> Live 6-Way Head-to-Head Leaderboard
+        <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-3">
+          <h2 className="font-sans text-sm font-bold text-slate-900 flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-amber-700" /> Live 6-Way
+            Head-to-Head Leaderboard
           </h2>
-          <span className="font-mono text-xs text-slate-400">
-            Ranked by AC Feasibility → Critical Load Restored (%) → Resilience Score
+          <span className="font-sans text-xs text-slate-500">
+            Ranked by AC Feasibility → Critical Load Restored (%) → Resilience
+            Score
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left font-mono text-xs">
-            <thead className="text-[10px] uppercase text-slate-400 border-b border-slate-800">
+          <table className="w-full text-left font-sans text-xs">
+            <thead className="text-xs uppercase text-slate-500 border-b border-slate-200">
               <tr>
                 <th className="py-2 px-2">Rank</th>
                 <th className="py-2 px-2">Participant</th>
@@ -169,7 +177,7 @@ export default function HumanVsAlgorithmChallengePage() {
                 <th className="py-2 px-2">Resilience Score</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-200">
               {leaderboard.map((row: any) => {
                 const isHuman = row.participant === "HUMAN_OPERATOR";
                 const isCaper = row.participant === "CAPER";
@@ -178,35 +186,43 @@ export default function HumanVsAlgorithmChallengePage() {
                     key={row.participant}
                     className={
                       isHuman
-                        ? "bg-cyan-950/35 border-l-2 border-cyan-400"
+                        ? "bg-blue-50 border-l-2 border-blue-200"
                         : isCaper
-                        ? "bg-violet-950/30"
-                        : "hover:bg-slate-800/40"
+                          ? "bg-blue-50"
+                          : "hover:bg-slate-100"
                     }
                   >
-                    <td className="py-2.5 px-2 font-bold text-amber-300">#{row.rank}</td>
-                    <td className="py-2.5 px-2 font-bold text-white">
+                    <td className="py-2.5 px-2 font-bold text-amber-700">
+                      #{row.rank}
+                    </td>
+                    <td className="py-2.5 px-2 font-bold text-slate-900">
                       {row.label || row.participant}
                     </td>
                     <td className="py-2.5 px-2">
                       <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                        className={`rounded px-1.5 py-0.5 text-xs font-bold ${
                           row.ac_feasible
-                            ? "bg-emerald-500/20 text-emerald-300"
-                            : "bg-red-500/20 text-red-300"
+                            ? "bg-teal-50 text-teal-700"
+                            : "bg-red-50 text-red-700"
                         }`}
                       >
                         {row.ac_feasible ? "FEASIBLE" : "VIOLATION"}
                       </span>
                     </td>
-                    <td className="py-2.5 px-2 font-bold text-emerald-300">
+                    <td className="py-2.5 px-2 font-bold text-teal-700">
                       {row.critical_load_restored_pct?.toFixed(1)}%
                     </td>
-                    <td className="py-2.5 px-2">{row.total_load_restored_pct?.toFixed(1)}%</td>
-                    <td className="py-2.5 px-2">{row.min_voltage_pu?.toFixed(4)} pu</td>
-                    <td className="py-2.5 px-2">{row.max_branch_loading_pct?.toFixed(1)}%</td>
+                    <td className="py-2.5 px-2">
+                      {row.total_load_restored_pct?.toFixed(1)}%
+                    </td>
+                    <td className="py-2.5 px-2">
+                      {row.min_voltage_pu?.toFixed(4)} pu
+                    </td>
+                    <td className="py-2.5 px-2">
+                      {row.max_branch_loading_pct?.toFixed(1)}%
+                    </td>
                     <td className="py-2.5 px-2">{row.switching_count}</td>
-                    <td className="py-2.5 px-2 font-extrabold text-cyan-300">
+                    <td className="py-2.5 px-2 font-extrabold text-blue-700">
                       {row.resilience_score?.toFixed(1)}
                     </td>
                   </tr>
@@ -229,4 +245,3 @@ export default function HumanVsAlgorithmChallengePage() {
     </div>
   );
 }
-

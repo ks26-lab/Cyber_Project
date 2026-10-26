@@ -60,3 +60,19 @@ node_modules/
 # macOS
 .DS_Store
 *.tsbuildinfo
+
+# Local secrets and databases
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated build information
+*.tsbuildinfo
+node_modules/
+.next/
+.venv/
+__pycache__/
+*.pyc

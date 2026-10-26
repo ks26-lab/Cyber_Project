@@ -26,48 +26,64 @@ function getBuildingColor(
   b: Building3DState,
   overlayMode: string,
   isSelected: boolean,
-  isInTrace: boolean
+  isInTrace: boolean,
 ): { primary: string; emissive: string; windowColor: string } {
   if (isInTrace) {
-    return { primary: "#8B5CF6", emissive: "#7C3AED", windowColor: "#C4B5FD" };
+    return { primary: "#375F9B", emissive: "#7C3AED", windowColor: "#C4B5FD" };
   }
   if (b.power_state === "BLACKOUT") {
-    return { primary: "#1E293B", emissive: "#EF4444", windowColor: "#450A0A" };
+    return { primary: "#A5B5C5", emissive: "#B95D59", windowColor: "#450A0A" };
   }
   if (overlayMode === "CRITICALITY") {
     if (b.priority_tier === 1) {
-      return { primary: "#065F46", emissive: "#10B981", windowColor: "#6EE7B7" };
+      return {
+        primary: "#065F46",
+        emissive: "#4F8A80",
+        windowColor: "#6EE7B7",
+      };
     }
     if (b.priority_tier === 2) {
-      return { primary: "#1E3A8A", emissive: "#38BDF8", windowColor: "#93C5FD" };
+      return {
+        primary: "#1E3A8A",
+        emissive: "#5787A5",
+        windowColor: "#93C5FD",
+      };
     }
     return { primary: "#334155", emissive: "#94A3B8", windowColor: "#CBD5E1" };
   }
   if (overlayMode === "VOLTAGE") {
     if (b.voltage_pu >= 0.97) {
-      return { primary: "#065F46", emissive: "#10B981", windowColor: "#A7F3D0" };
+      return {
+        primary: "#065F46",
+        emissive: "#4F8A80",
+        windowColor: "#A7F3D0",
+      };
     }
     if (b.voltage_pu >= 0.93) {
-      return { primary: "#78350F", emissive: "#F59E0B", windowColor: "#FDE68A" };
+      return {
+        primary: "#78350F",
+        emissive: "#B28B48",
+        windowColor: "#FDE68A",
+      };
     }
-    return { primary: "#7F1D1D", emissive: "#EF4444", windowColor: "#FCA5A5" };
+    return { primary: "#7F1D1D", emissive: "#B95D59", windowColor: "#FCA5A5" };
   }
   // Default ENERGIZATION mode
   if (b.power_state === "BACKUP_BATTERY") {
-    return { primary: "#0C4A6E", emissive: "#38BDF8", windowColor: "#7DD3FC" };
+    return { primary: "#0C4A6E", emissive: "#5787A5", windowColor: "#7DD3FC" };
   }
   if (b.power_state === "CURTAILED") {
-    return { primary: "#78350F", emissive: "#F59E0B", windowColor: "#FCD34D" };
+    return { primary: "#78350F", emissive: "#B28B48", windowColor: "#FCD34D" };
   }
   if (b.power_state === "SOURCE_ACTIVE") {
-    return { primary: "#164E63", emissive: "#22D3EE", windowColor: "#67E8F9" };
+    return { primary: "#164E63", emissive: "#3D739B", windowColor: "#3D739B" };
   }
   if (b.priority_tier === 1) {
-    return { primary: "#0F2942", emissive: "#10B981", windowColor: "#A7F3D0" };
+    return { primary: "#718C9C", emissive: "#4F8A80", windowColor: "#A7F3D0" };
   }
   return {
-    primary: isSelected ? "#1E3A8A" : "#152238",
-    emissive: isSelected ? "#22D3EE" : "#0EA5E9",
+    primary: isSelected ? "#1E3A8A" : "#7E95A9",
+    emissive: isSelected ? "#3D739B" : "#0EA5E9",
     windowColor: "#BAE6FD",
   };
 }
@@ -97,7 +113,7 @@ function ProceduralBuildingMesh({
   useFrame(({ clock }) => {
     if (pulseRef.current) {
       const t = clock.getElapsedTime();
-      const s = 1 + 0.14 * Math.sin(t * (isBlackout ? 5.0 : 2.2));
+      const s = 1;
       pulseRef.current.scale.set(s, 1, s);
     }
   });
@@ -120,27 +136,31 @@ function ProceduralBuildingMesh({
       <mesh position={[0, 0.08, 0]} receiveShadow>
         <boxGeometry args={[3.4, 0.16, 3.4]} />
         <meshStandardMaterial
-          color={isSelected ? "#164E63" : "#0D1524"}
+          color={isSelected ? "#164E63" : "#DDE5EC"}
           metalness={0.3}
           roughness={0.7}
         />
       </mesh>
 
       {/* Selection / Status Base Ring */}
-      <mesh ref={pulseRef} position={[0, 0.18, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh
+        ref={pulseRef}
+        position={[0, 0.18, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
         <ringGeometry args={[1.65, 1.92, 32]} />
         <meshBasicMaterial
           color={
             isBlackout
-              ? "#EF4444"
+              ? "#B95D59"
               : isInTrace
-              ? "#8B5CF6"
-              : isSelected || hovered
-              ? "#22D3EE"
-              : colors.emissive
+                ? "#375F9B"
+                : isSelected || hovered
+                  ? "#3D739B"
+                  : colors.emissive
           }
           transparent
-          opacity={isSelected || hovered || isBlackout || isInTrace ? 0.9 : 0.45}
+          opacity={isSelected || hovered || isBlackout || isInTrace ? 0.7 : 0}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -154,7 +174,7 @@ function ProceduralBuildingMesh({
             <meshStandardMaterial
               color={colors.primary}
               emissive={colors.emissive}
-              emissiveIntensity={isBlackout ? 0.05 : 0.35}
+              emissiveIntensity={0.06}
               roughness={0.3}
               metalness={0.5}
             />
@@ -165,22 +185,25 @@ function ProceduralBuildingMesh({
             <meshStandardMaterial
               color={colors.primary}
               emissive={colors.windowColor}
-              emissiveIntensity={isBlackout ? 0.02 : 0.25}
+              emissiveIntensity={0.06}
             />
           </mesh>
           {/* Glowing Red Cross Emblem on Facade */}
           <mesh position={[0, 2.6, 0.93]}>
             <boxGeometry args={[0.75, 0.22, 0.06]} />
-            <meshBasicMaterial color={isBlackout ? "#F87171" : "#EF4444"} />
+            <meshBasicMaterial color={isBlackout ? "#F87171" : "#B95D59"} />
           </mesh>
           <mesh position={[0, 2.6, 0.93]}>
             <boxGeometry args={[0.22, 0.75, 0.06]} />
-            <meshBasicMaterial color={isBlackout ? "#F87171" : "#EF4444"} />
+            <meshBasicMaterial color={isBlackout ? "#F87171" : "#B95D59"} />
           </mesh>
           {/* Rooftop Helipad */}
           <mesh position={[0, 3.55, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <circleGeometry args={[0.65, 24]} />
-            <meshBasicMaterial color={isBlackout ? "#7F1D1D" : "#10B981"} side={THREE.DoubleSide} />
+            <meshBasicMaterial
+              color={isBlackout ? "#7F1D1D" : "#4F8A80"}
+              side={THREE.DoubleSide}
+            />
           </mesh>
         </group>
       ) : ftype === "WATER_TREATMENT" ? (
@@ -190,16 +213,16 @@ function ProceduralBuildingMesh({
             <cylinderGeometry args={[0.65, 0.65, 1.2, 24]} />
             <meshStandardMaterial
               color="#0C4A6E"
-              emissive={isBlackout ? "#7F1D1D" : "#22D3EE"}
-              emissiveIntensity={isBlackout ? 0.1 : 0.45}
+              emissive={isBlackout ? "#7F1D1D" : "#3D739B"}
+              emissiveIntensity={0.06}
             />
           </mesh>
           <mesh position={[0.65, 0.75, -0.5]} castShadow>
             <cylinderGeometry args={[0.65, 0.65, 1.2, 24]} />
             <meshStandardMaterial
               color="#0C4A6E"
-              emissive={isBlackout ? "#7F1D1D" : "#22D3EE"}
-              emissiveIntensity={isBlackout ? 0.1 : 0.45}
+              emissive={isBlackout ? "#7F1D1D" : "#3D739B"}
+              emissiveIntensity={0.06}
             />
           </mesh>
           {/* Main Pumping Hall & Elevated Tower */}
@@ -208,12 +231,16 @@ function ProceduralBuildingMesh({
             <meshStandardMaterial
               color={colors.primary}
               emissive={colors.emissive}
-              emissiveIntensity={isBlackout ? 0.05 : 0.3}
+              emissiveIntensity={0.06}
             />
           </mesh>
           <mesh position={[0.7, 2.5, 0.65]} castShadow>
             <cylinderGeometry args={[0.45, 0.25, 1.2, 16]} />
-            <meshStandardMaterial color="#0284C7" emissive="#38BDF8" emissiveIntensity={0.4} />
+            <meshStandardMaterial
+              color="#0284C7"
+              emissive="#5787A5"
+              emissiveIntensity={0.06}
+            />
           </mesh>
         </group>
       ) : ftype === "CONTROL_CENTER" ? (
@@ -224,7 +251,7 @@ function ProceduralBuildingMesh({
             <meshStandardMaterial
               color={colors.primary}
               emissive={colors.emissive}
-              emissiveIntensity={isBlackout ? 0.08 : 0.45}
+              emissiveIntensity={0.06}
               metalness={0.7}
               roughness={0.2}
             />
@@ -232,11 +259,11 @@ function ProceduralBuildingMesh({
           {/* Telemetry Spire & Dish */}
           <mesh position={[0, 3.7, 0]}>
             <cylinderGeometry args={[0.06, 0.12, 1.4, 12]} />
-            <meshBasicMaterial color="#22D3EE" />
+            <meshBasicMaterial color="#3D739B" />
           </mesh>
           <mesh position={[0, 4.4, 0]}>
             <sphereGeometry args={[0.22, 16, 16]} />
-            <meshBasicMaterial color={isBlackout ? "#EF4444" : "#22D3EE"} />
+            <meshBasicMaterial color={isBlackout ? "#B95D59" : "#3D739B"} />
           </mesh>
         </group>
       ) : ftype === "UNIVERSITY" ? (
@@ -247,16 +274,18 @@ function ProceduralBuildingMesh({
             <meshStandardMaterial
               color={colors.primary}
               emissive={colors.emissive}
-              emissiveIntensity={isBlackout ? 0.05 : 0.3}
+              emissiveIntensity={0.06}
             />
           </mesh>
           {/* Observatory / Library Dome */}
           <mesh position={[0, 2.35, 0]}>
-            <sphereGeometry args={[0.75, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            <sphereGeometry
+              args={[0.75, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2]}
+            />
             <meshStandardMaterial
               color="#1E3A8A"
-              emissive={isBlackout ? "#450A0A" : "#38BDF8"}
-              emissiveIntensity={isBlackout ? 0.05 : 0.45}
+              emissive={isBlackout ? "#450A0A" : "#5787A5"}
+              emissiveIntensity={0.06}
             />
           </mesh>
         </group>
@@ -268,17 +297,25 @@ function ProceduralBuildingMesh({
             <meshStandardMaterial
               color={colors.primary}
               emissive={colors.emissive}
-              emissiveIntensity={isBlackout ? 0.05 : 0.25}
+              emissiveIntensity={0.06}
             />
           </mesh>
           {/* Twin Smokestacks */}
           <mesh position={[0.9, 2.2, -0.5]} castShadow>
             <cylinderGeometry args={[0.22, 0.28, 3.6, 16]} />
-            <meshStandardMaterial color="#334155" emissive="#F59E0B" emissiveIntensity={0.25} />
+            <meshStandardMaterial
+              color="#334155"
+              emissive="#B28B48"
+              emissiveIntensity={0.06}
+            />
           </mesh>
           <mesh position={[0.9, 2.0, 0.5]} castShadow>
             <cylinderGeometry args={[0.22, 0.28, 3.2, 16]} />
-            <meshStandardMaterial color="#334155" emissive="#F59E0B" emissiveIntensity={0.25} />
+            <meshStandardMaterial
+              color="#334155"
+              emissive="#B28B48"
+              emissiveIntensity={0.06}
+            />
           </mesh>
         </group>
       ) : ftype === "SOLAR" ? (
@@ -293,8 +330,8 @@ function ProceduralBuildingMesh({
               <boxGeometry args={[2.4, 0.1, 0.7]} />
               <meshStandardMaterial
                 color="#0284C7"
-                emissive="#22D3EE"
-                emissiveIntensity={0.5}
+                emissive="#3D739B"
+                emissiveIntensity={0.06}
                 metalness={0.8}
                 roughness={0.15}
               />
@@ -308,8 +345,8 @@ function ProceduralBuildingMesh({
             <boxGeometry args={[1.0, 1.4, 2.2]} />
             <meshStandardMaterial
               color="#082F49"
-              emissive="#38BDF8"
-              emissiveIntensity={0.55}
+              emissive="#5787A5"
+              emissiveIntensity={0.06}
               metalness={0.6}
             />
           </mesh>
@@ -317,8 +354,8 @@ function ProceduralBuildingMesh({
             <boxGeometry args={[1.0, 1.4, 2.2]} />
             <meshStandardMaterial
               color="#082F49"
-              emissive="#10B981"
-              emissiveIntensity={0.45}
+              emissive="#4F8A80"
+              emissiveIntensity={0.06}
               metalness={0.6}
             />
           </mesh>
@@ -329,9 +366,9 @@ function ProceduralBuildingMesh({
           <mesh position={[0, 1.0, 0]} castShadow>
             <boxGeometry args={[1.9, 1.7, 1.9]} />
             <meshStandardMaterial
-              color="#0F172A"
-              emissive="#22D3EE"
-              emissiveIntensity={isBlackout ? 0.05 : 0.55}
+              color="#CBD5DF"
+              emissive="#3D739B"
+              emissiveIntensity={0.06}
               metalness={0.75}
             />
           </mesh>
@@ -339,7 +376,7 @@ function ProceduralBuildingMesh({
           {[-0.6, 0, 0.6].map((xOff, i) => (
             <mesh key={i} position={[xOff, 2.25, 0]}>
               <cylinderGeometry args={[0.1, 0.14, 1.0, 12]} />
-              <meshBasicMaterial color={isBlackout ? "#EF4444" : "#22D3EE"} />
+              <meshBasicMaterial color={isBlackout ? "#B95D59" : "#3D739B"} />
             </mesh>
           ))}
         </group>
@@ -351,7 +388,7 @@ function ProceduralBuildingMesh({
             <meshStandardMaterial
               color={colors.primary}
               emissive={colors.windowColor}
-              emissiveIntensity={isBlackout ? 0.02 : 0.35}
+              emissiveIntensity={0.06}
             />
           </mesh>
           <mesh position={[0.55, 1.35, 0.45]} castShadow>
@@ -359,7 +396,7 @@ function ProceduralBuildingMesh({
             <meshStandardMaterial
               color={colors.primary}
               emissive={colors.emissive}
-              emissiveIntensity={isBlackout ? 0.02 : 0.3}
+              emissiveIntensity={0.06}
             />
           </mesh>
         </group>
@@ -374,14 +411,14 @@ function ProceduralBuildingMesh({
       >
         <div
           onClick={() => onSelect(building.bus_id)}
-          className={`cursor-pointer select-none whitespace-nowrap rounded-md px-2 py-0.5 font-mono text-[10px] border shadow-lg transition ${
+          className={`city-label ${isSelected ? "selected" : ""} cursor-pointer select-none whitespace-nowrap rounded-md px-2 py-0.5 font-sans text-xs border shadow-lg transition ${
             isBlackout
-              ? "bg-red-950/95 border-red-500 text-red-200 animate-pulse"
+              ? "bg-red-50 border-red-200 text-red-700 "
               : isInTrace
-              ? "bg-violet-950/95 border-violet-400 text-violet-100"
-              : isSelected
-              ? "bg-cyan-950/95 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400"
-              : "bg-[#0B111C]/90 border-slate-700/80 text-slate-200"
+                ? "bg-blue-50 border-blue-200 text-blue-700"
+                : isSelected
+                  ? "bg-blue-50 border-blue-200 text-blue-700 ring-1 ring-cyan-400"
+                  : "bg-slate-50 border-slate-200 text-slate-700"
           }`}
         >
           <div className="flex items-center gap-1 font-bold">
@@ -390,25 +427,28 @@ function ProceduralBuildingMesh({
                 isBlackout
                   ? "bg-red-400"
                   : building.power_state === "BACKUP_BATTERY"
-                  ? "bg-sky-400"
-                  : building.power_state === "CURTAILED"
-                  ? "bg-amber-400"
-                  : "bg-emerald-400"
+                    ? "bg-sky-400"
+                    : building.power_state === "CURTAILED"
+                      ? "bg-amber-400"
+                      : "bg-blue-800"
               }`}
             />
             <span>{building.bus_id}</span>
-            <span className="text-slate-400">•</span>
+            <span className="text-slate-500">•</span>
             <span>{building.name.split(" ")[0]}</span>
           </div>
-          <div className="text-[9px] text-slate-300 flex items-center gap-1.5">
+          <div className="city-label-detail text-xs text-slate-600 flex items-center gap-1.5">
             <span>{building.voltage_pu.toFixed(3)} pu</span>
             {building.demand_mw > 0 && (
               <span>
-                {building.served_mw.toFixed(1)}/{building.demand_mw.toFixed(1)} MW
+                {building.served_mw.toFixed(1)}/{building.demand_mw.toFixed(1)}{" "}
+                MW
               </span>
             )}
             {building.battery_soc_pct != null && (
-              <span className="text-sky-300">SOC {building.battery_soc_pct.toFixed(0)}%</span>
+              <span className="text-blue-700">
+                SOC {building.battery_soc_pct.toFixed(0)}%
+              </span>
             )}
           </div>
         </div>
@@ -438,29 +478,41 @@ function PowerCorridorLine({
   const isTie = line.line_id.toUpperCase().includes("TIE");
   const isOut = line.status === "OUT_OF_SERVICE" || isFaulted;
 
-  const start = useMemo(() => new THREE.Vector3(fromPos[0], 0.45, fromPos[2]), [fromPos]);
-  const end = useMemo(() => new THREE.Vector3(toPos[0], 0.45, toPos[2]), [toPos]);
+  const start = useMemo(
+    () => new THREE.Vector3(fromPos[0], 0.45, fromPos[2]),
+    [fromPos],
+  );
+  const end = useMemo(
+    () => new THREE.Vector3(toPos[0], 0.45, toPos[2]),
+    [toPos],
+  );
   const mid = useMemo(() => start.clone().lerp(end, 0.5), [start, end]);
 
   const color = isFaulted
-    ? "#EF4444"
+    ? "#B95D59"
     : isInTrace
-    ? "#A855F7"
-    : isOut
-    ? "#475569"
-    : line.loading_percent > 95
-    ? "#EF4444"
-    : line.loading_percent > 80
-    ? "#F59E0B"
-    : isTie
-    ? "#10B981"
-    : "#22D3EE";
+      ? "#375F9B"
+      : isOut
+        ? "#475569"
+        : line.loading_percent > 95
+          ? "#B95D59"
+          : line.loading_percent > 80
+            ? "#B28B48"
+            : isTie
+              ? "#4F8A80"
+              : "#3D739B";
 
   useFrame(({ clock }) => {
     if (particleRef.current && !isOut) {
-      const speed = Math.max(0.35, Math.min(1.8, Math.abs(line.p_from_mw) * 0.25));
+      const speed = Math.max(
+        0.35,
+        Math.min(1.8, Math.abs(line.p_from_mw) * 0.25),
+      );
       const t = (clock.getElapsedTime() * speed) % 1;
-      const pos = line.p_from_mw >= 0 ? start.clone().lerp(end, t) : end.clone().lerp(start, t);
+      const pos =
+        line.p_from_mw >= 0
+          ? start.clone().lerp(end, t)
+          : end.clone().lerp(start, t);
       particleRef.current.position.copy(pos);
     }
   });
@@ -473,7 +525,7 @@ function PowerCorridorLine({
           [end.x, end.y, end.z],
         ]}
         color={color}
-        lineWidth={isSelected || isInTrace ? 4.2 : isOut ? 1.5 : 2.8}
+        lineWidth={isSelected || isInTrace ? 3 : 1.5}
         dashed={isOut}
         dashSize={0.5}
         gapSize={0.35}
@@ -482,17 +534,17 @@ function PowerCorridorLine({
           onSelect(line.line_id);
         }}
       />
-      {!isOut && (
+      {!isOut && (isSelected || isInTrace) && (
         <mesh ref={particleRef} position={[mid.x, mid.y, mid.z]}>
           <sphereGeometry args={[0.19, 12, 12]} />
-          <meshBasicMaterial color={isInTrace ? "#C084FC" : "#67E8F9"} />
+          <meshBasicMaterial color={isInTrace ? "#C084FC" : "#3D739B"} />
         </mesh>
       )}
       {isFaulted && (
         <Html position={[mid.x, 1.3, mid.z]} center distanceFactor={25}>
           <div
             onClick={() => onSelect(line.line_id)}
-            className="cursor-pointer rounded bg-red-600/95 px-1.5 py-0.5 font-mono text-[9px] font-bold text-white border border-red-300 shadow-lg animate-bounce"
+            className="cursor-pointer rounded bg-red-50 px-1.5 py-0.5 font-sans text-xs font-bold text-slate-900 border border-red-200 shadow-lg "
           >
             ⚡ FAULT: {line.line_id}
           </div>
@@ -520,7 +572,8 @@ function CameraController({
       camera.position.set(0, 34, 0.01);
       controlsRef.current.target.set(0, 0, 0);
     } else if (preset === "HOSPITAL") {
-      const hosp = buildings.find((b) => b.facility_type === "HOSPITAL") || buildings[2];
+      const hosp =
+        buildings.find((b) => b.facility_type === "HOSPITAL") || buildings[2];
       const [hx, , hz] = hosp ? hosp.position_3d : [-2, 0, -9];
       camera.position.set(hx + 8, 9, hz + 9);
       controlsRef.current.target.set(hx, 1.5, hz);
@@ -552,7 +605,11 @@ function CameraController({
   );
 }
 
-export function CityCanvas3D({ heightClass = "h-[560px]" }: { heightClass?: string }) {
+export function CityCanvas3D({
+  heightClass = "h-[560px]",
+}: {
+  heightClass?: string;
+}) {
   const {
     session,
     selectedAssetId,
@@ -581,71 +638,57 @@ export function CityCanvas3D({ heightClass = "h-[560px]" }: { heightClass?: stri
 
   const faultedAssets = useMemo(
     () => new Set(faults.filter((f) => !f.cleared).map((f) => f.asset_id)),
-    [faults]
+    [faults],
   );
 
   return (
     <div
       data-testid="city-canvas-3d"
-      className={`relative w-full ${heightClass} rounded-xl border border-slate-800/90 bg-[#06090F] overflow-hidden shadow-2xl`}
+      className={`relative w-full ${heightClass} rounded-xl border border-slate-200 bg-slate-50 overflow-hidden shadow-2xl`}
     >
-      {/* Top Camera & Overlay Mode Floating HUD */}
-      <div className="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-        {/* Camera Preset Switcher */}
-        <div className="pointer-events-auto flex flex-wrap items-center gap-1 rounded-lg bg-[#0B111C]/90 p-1 border border-slate-700/80 backdrop-blur-md">
-          <span className="px-2 py-1 font-mono text-[10px] uppercase text-slate-400 flex items-center gap-1">
-            <Camera className="h-3 w-3 text-cyan-400" /> Camera:
-          </span>
-          {(
-            [
+      <div className="absolute top-3 left-3 z-20 flex flex-wrap items-center gap-2 presentation-hide">
+        <label className="bg-white rounded-lg border border-slate-200 p-2 text-xs">
+          Camera{" "}
+          <select
+            aria-label="Camera preset"
+            value={cameraPreset}
+            onChange={(e) => setCameraPreset(e.target.value as any)}
+            className="ml-2 bg-white"
+          >
+            {[
               ["ISOMETRIC", "Isometric"],
-              ["TOP_DOWN", "Top-Down"],
+              ["TOP_DOWN", "Top down"],
               ["HOSPITAL", "Hospital"],
               ["SUBSTATION", "Substation"],
-              ["FAULT", "Fault Focus"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              onClick={() => setCameraPreset(id)}
-              className={`rounded px-2 py-1 font-mono text-[11px] transition ${
-                cameraPreset === id
-                  ? "bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 font-semibold"
-                  : "text-slate-300 hover:bg-slate-800"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Visual Overlay Switcher */}
-        <div className="pointer-events-auto flex flex-wrap items-center gap-1 rounded-lg bg-[#0B111C]/90 p-1 border border-slate-700/80 backdrop-blur-md">
-          <span className="px-2 py-1 font-mono text-[10px] uppercase text-slate-400 flex items-center gap-1">
-            <Layers className="h-3 w-3 text-violet-400" /> Layer:
-          </span>
-          {(
-            [
+              ["FAULT", "Fault focus"],
+            ].map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="bg-white rounded-lg border border-slate-200 p-2 text-xs">
+          Layer{" "}
+          <select
+            aria-label="City overlay"
+            value={overlayMode}
+            onChange={(e) => setOverlayMode(e.target.value as any)}
+            className="ml-2 bg-white"
+          >
+            {[
               ["ENERGIZATION", "Energization"],
-              ["CRITICALITY", "Priority Tiers"],
-              ["VOLTAGE", "Bus Voltage (pu)"],
-              ["THERMAL", "Line Loading (%)"],
-              ["ALGORITHM_TRACE", "DSA Trace"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              onClick={() => setOverlayMode(id)}
-              className={`rounded px-2 py-1 font-mono text-[11px] transition ${
-                overlayMode === id
-                  ? "bg-violet-500/25 text-violet-200 border border-violet-400/50 font-semibold"
-                  : "text-slate-300 hover:bg-slate-800"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+              ["CRITICALITY", "Priority tiers"],
+              ["VOLTAGE", "Bus voltage"],
+              ["THERMAL", "Line loading"],
+              ["ALGORITHM_TRACE", "Algorithm trace"],
+            ].map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {/* Three.js WebGL 3D City Viewport */}
@@ -654,8 +697,8 @@ export function CityCanvas3D({ heightClass = "h-[560px]" }: { heightClass?: stri
         camera={{ position: [19, 18, 21], fov: 42 }}
         gl={{ preserveDrawingBuffer: true, antialias: true }}
       >
-        <color attach="background" args={["#06090F"]} />
-        <fog attach="fog" args={["#06090F", 32, 68]} />
+        <color attach="background" args={["#EEF3F6"]} />
+        <fog attach="fog" args={["#EEF3F6", 32, 68]} />
 
         <ambientLight intensity={0.75} />
         <directionalLight
@@ -665,15 +708,26 @@ export function CityCanvas3D({ heightClass = "h-[560px]" }: { heightClass?: stri
           shadow-mapSize-width={1024}
           shadow-mapSize-height={1024}
         />
-        <pointLight position={[-12, 12, -10]} intensity={0.8} color="#22D3EE" />
-        <pointLight position={[10, 10, 8]} intensity={0.6} color="#10B981" />
+        <pointLight position={[-12, 12, -10]} intensity={0.8} color="#3D739B" />
+        <pointLight position={[10, 10, 8]} intensity={0.6} color="#4F8A80" />
 
         {/* Ground Plane & Isometric Engineering Grid */}
-        <mesh position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <mesh
+          position={[0, -0.05, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          receiveShadow
+        >
           <planeGeometry args={[80, 80]} />
-          <meshStandardMaterial color="#070B14" roughness={0.9} metalness={0.1} />
+          <meshStandardMaterial
+            color="#EEF3F6"
+            roughness={0.9}
+            metalness={0.1}
+          />
         </mesh>
-        <gridHelper args={[52, 26, "#1E293B", "#0F172A"]} position={[0, 0.01, 0]} />
+        <gridHelper
+          args={[52, 26, "#A5B5C5", "#CBD5DF"]}
+          position={[0, 0.01, 0]}
+        />
 
         {/* Render Power Feeder Corridors & Tie Lines */}
         {lines.map((ln) => {
@@ -706,61 +760,69 @@ export function CityCanvas3D({ heightClass = "h-[560px]" }: { heightClass?: stri
           />
         ))}
 
-        <CameraController preset={cameraPreset} buildings={buildings} faults={faults} />
+        <CameraController
+          preset={cameraPreset}
+          buildings={buildings}
+          faults={faults}
+        />
       </Canvas>
 
       {/* Bottom Interactive Tie-Switch Dock & Legend Overlay */}
       <div className="absolute bottom-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         {/* Quick Tie-Switch Control Bar */}
-        <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 rounded-lg bg-[#0B111C]/92 px-3 py-1.5 border border-slate-700/80 backdrop-blur-md">
-          <span className="font-mono text-[10px] uppercase text-slate-400 mr-1">
-            Tie Switches:
-          </span>
+        <details className="pointer-events-auto presentation-hide flex flex-wrap items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-1.5 border border-slate-200 backdrop-blur-md">
+          <summary>Tie switches</summary>
           {switches.slice(0, 5).map((sw) => (
             <button
               key={sw.switch_id}
               onClick={() =>
-                applyAction(sw.closed ? "OPEN_SWITCH" : "CLOSE_SWITCH", sw.switch_id)
+                applyAction(
+                  sw.closed ? "OPEN_SWITCH" : "CLOSE_SWITCH",
+                  sw.switch_id,
+                )
               }
-              className={`flex items-center gap-1.5 rounded px-2 py-1 font-mono text-[11px] border transition ${
+              className={`flex items-center gap-1.5 rounded px-2 py-1 font-sans text-xs border transition ${
                 sw.closed
-                  ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-200"
-                  : "bg-slate-800/90 border-slate-700 text-amber-300 hover:border-amber-400/60"
+                  ? "bg-teal-50 border-teal-200 text-teal-700"
+                  : "bg-slate-100 border-slate-200 text-amber-700 hover:border-amber-200"
               }`}
             >
               <span
                 className={`h-2 w-2 rounded-full ${
-                  sw.closed ? "bg-emerald-400" : "bg-amber-400"
+                  sw.closed ? "bg-blue-800" : "bg-amber-400"
                 }`}
               />
               <span>{sw.switch_id}</span>
-              <span className="text-[9px] opacity-80">
+              <span className="text-xs opacity-80">
                 ({sw.closed ? "CLOSED" : "NO-OPEN"})
               </span>
             </button>
           ))}
-        </div>
+        </details>
 
         {/* Status Color Legend */}
-        <div className="pointer-events-auto hidden md:flex items-center gap-3 rounded-lg bg-[#0B111C]/92 px-3 py-1.5 border border-slate-700/80 font-mono text-[10px] text-slate-300">
+        <div className="pointer-events-auto hidden md:flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-1.5 border border-slate-200 font-sans text-xs text-slate-600">
           <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" /> Tier-1 Critical
+            <span className="h-2 w-2 rounded-full bg-blue-800" /> Tier-1
+            Critical
           </span>
           <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-cyan-400" /> Energized Feeder
+            <span className="h-2 w-2 rounded-full bg-blue-800" /> Energized
+            Feeder
           </span>
           <span className="flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-sky-400" /> BESS Support
           </span>
           <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-amber-400" /> Curtailed / Open Tie
+            <span className="h-2 w-2 rounded-full bg-amber-400" /> Curtailed /
+            Open Tie
           </span>
           <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-red-500" /> Fault / Blackout
+            <span className="h-2 w-2 rounded-full bg-red-500" /> Fault /
+            Blackout
           </span>
         </div>
       </div>
     </div>
   );
 }
-

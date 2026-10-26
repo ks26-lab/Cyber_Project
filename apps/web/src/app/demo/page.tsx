@@ -2,7 +2,15 @@
 
 import React from "react";
 import Link from "next/link";
-import { Play, Zap, Cpu, FlaskConical, Swords, CheckCircle2, ArrowRight } from "lucide-react";
+import {
+  Play,
+  Zap,
+  Cpu,
+  FlaskConical,
+  Swords,
+  CheckCircle2,
+  ArrowRight,
+} from "lucide-react";
 
 const DEMO_STEPS = [
   {
@@ -10,14 +18,15 @@ const DEMO_STEPS = [
     title: "1. 3D City Command & Hospital Feeder Fault Injection",
     route: "/simulation",
     talking_points: [
-      "Show the 12-Bus 33/11 kV Smart City in isometric 3D with animated power flow particles and solved Newton-Raphson AC telemetry.",
-      "Click 'Trip Hospital Feeder (LINE-02-03)' in the Disturbance Controls panel to plunge Metro Trauma Hospital (BUS-03) and North Residential (BUS-07) into blackout.",
+      "Select the 12-bus training feeder and show the city overview. Use Present for a clean visual, then Escape to return to the controls.",
+      "Open the Electrical inspector tab and trip LINE-02-03. Inspect the hospital and the change in critical load served.",
       "Switch the 3D camera preset to 'Hospital' to inspect the de-energized Tier-1 facility.",
     ],
   },
   {
     minute: "Minute 1:00 – 2:15",
-    title: "2. Step-by-Step DSA Trace Replay (BFS, Tarjan, Dijkstra, Knapsack DP)",
+    title:
+      "2. Step-by-Step DSA Trace Replay (BFS, Tarjan, Dijkstra, Knapsack DP)",
     route: "/algorithms",
     talking_points: [
       "Open the 13-Algorithm DSA Lab and run BFS (O(1) deque FIFO) to visualize the de-energized island.",
@@ -57,21 +66,24 @@ const DEMO_STEPS = [
 export default function FacultyDemoGuidePage() {
   return (
     <div className="flex-1 scada-grid-bg p-4 lg:p-8 space-y-6">
-      <div className="scada-panel rounded-2xl p-6 border-emerald-500/30 flex flex-wrap items-center justify-between gap-4">
+      <div className="scada-panel rounded-2xl p-6 border-teal-200 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 border border-emerald-500/30 font-mono text-xs text-emerald-300 mb-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 border border-teal-200 font-sans text-xs text-teal-700 mb-2">
             5-MINUTE LIVE FACULTY REVIEW & INTERVIEW WALKTHROUGH
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             GRIDSEC // ZERO — Interactive Presentation Script
           </h1>
-          <p className="text-sm text-slate-300 mt-1 max-w-3xl">
-            Follow this structured 5-step sequence to demonstrate the 3D City game, the 13 DSA algorithms, the 8-stage CAPER restoration engine, pandapower AC physics, and reproducible scientific benchmarks.
+          <p className="text-sm text-slate-600 mt-1 max-w-3xl">
+            Follow this structured 5-step sequence to demonstrate the city
+            simulation, the 13 DSA algorithms, the 8-stage CAPER restoration
+            engine, pandapower AC physics, and reproducible scientific
+            benchmarks.
           </p>
         </div>
         <Link
           href="/simulation"
-          className="flex items-center gap-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 px-5 py-3 font-mono text-xs font-bold text-slate-950 transition"
+          className="flex items-center gap-2 rounded-xl bg-blue-800 hover:bg-blue-800 px-5 py-3 font-sans text-xs font-bold text-white transition"
         >
           <Play className="h-4 w-4" /> Start Step 1 in 3D City Command
         </Link>
@@ -84,22 +96,27 @@ export default function FacultyDemoGuidePage() {
             className="scada-panel rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4"
           >
             <div className="space-y-2 max-w-4xl">
-              <div className="flex items-center gap-2 font-mono text-xs">
-                <span className="rounded bg-cyan-500/20 px-2.5 py-0.5 font-bold text-cyan-300 border border-cyan-500/30">
+              <div className="flex items-center gap-2 font-sans text-xs">
+                <span className="rounded bg-blue-50 px-2.5 py-0.5 font-bold text-blue-700 border border-blue-200">
                   {step.minute}
                 </span>
-                <span className="font-bold text-white text-sm">{step.title}</span>
+                <span className="font-bold text-slate-900 text-sm">
+                  {step.title}
+                </span>
               </div>
-              <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
-                {step.talking_points.map((pt, idx) => (
-                  <li key={idx}>{pt}</li>
-                ))}
-              </ul>
+              <details>
+                <summary>Scene narrative & talking points</summary>
+                <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
+                  {step.talking_points.map((pt, idx) => (
+                    <li key={idx}>{pt}</li>
+                  ))}
+                </ul>
+              </details>
             </div>
 
             <Link
               href={step.route}
-              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 font-mono text-xs font-bold text-cyan-300 transition"
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-slate-100 hover:bg-slate-100 border border-slate-200 px-4 py-2 font-sans text-xs font-bold text-blue-700 transition"
             >
               Open {step.route} <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -109,4 +126,3 @@ export default function FacultyDemoGuidePage() {
     </div>
   );
 }
-

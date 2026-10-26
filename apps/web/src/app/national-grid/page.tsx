@@ -1,119 +1,193 @@
 "use client";
-
-import React, { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { IndiaMap, indiaNodes } from "@/components/maps/IndiaMap";
 import { useSimulationStore } from "@/store/useSimulationStore";
-import { CityCanvas3D } from "@/components/city3d/CityCanvas3D";
-import { Globe2, Zap, Activity, ShieldCheck } from "lucide-react";
-
 export default function NationalGridPage() {
-  const { session, resetSession, applyAction } = useSimulationStore();
-
+  const { session, resetSession, applyAction, loading, error } =
+    useSimulationStore();
+  const [region, setRegion] = useState("ALL");
+  const [overlay, setOverlay] = useState("Connectivity");
+  const [selected, setSelected] = useState("NR-DELHI");
   useEffect(() => {
     resetSession("INDIA_GRID_59", null, null);
   }, [resetSession]);
-
-  const buses = session.power_flow?.buses || [];
-  const lines = session.power_flow?.lines || [];
-
+  const n = indiaNodes.find((n) => n.id === selected)!;
+  const live = session.network_id === "INDIA_GRID_59";
+  const bus = live
+    ? session.power_flow.buses.find((b) => b.bus_id === `BUS-${selected}`)
+    : undefined;
+  const lines = live
+    ? session.power_flow.lines.filter(
+        (l) =>
+          l.from_bus === `BUS-${selected}` || l.to_bus === `BUS-${selected}`,
+      )
+    : [];
   return (
-    <div className="flex-1 scada-grid-bg p-4 lg:p-6 space-y-5">
-      <div className="scada-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 border-cyan-500/30">
+    <div className="p-6 lg:p-10 space-y-6">
+      <div className="page-heading">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-cyan-500/15 px-3 py-1 border border-cyan-500/30 font-mono text-xs text-cyan-300 mb-1.5">
-            GRIDSEC LEGACY + UPGRADED BULK TRANSMISSION MODULE • 765 / 400 / 220 kV
+          <div className="eyebrow">
+            Geographic intelligence / 59-node reference
           </div>
-          <h1 className="text-2xl font-extrabold text-white">
-            Indian National Power Grid (59-Substation Reference) & IEEE 30-Bus Explorer
-          </h1>
-          <p className="text-xs text-slate-300 mt-1 max-w-3xl">
-            Preserves the full 59-substation Indian National Grid across Northern, Western, Southern, Eastern, and North-Eastern Regional Load Despatch Centres (RLDCs) with normalized cross-voltage Newton-Raphson AC power-flow convergence.
+          <h1>India Grid</h1>
+          <p>
+            Explore regional connectivity and the electrical consequences of a
+            corridor outage.
           </p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => resetSession("INDIA_GRID_59", null, null)}
-            className={`rounded-lg px-3.5 py-2 font-mono text-xs font-bold border transition ${
-              session.network_id === "INDIA_GRID_59"
-                ? "bg-cyan-500 text-slate-950 border-cyan-400"
-                : "bg-slate-800 text-slate-200 border-slate-700"
-            }`}
-          >
-            India 59-Substation Grid
-          </button>
-          <button
-            onClick={() => resetSession("IEEE_30", null, null)}
-            className={`rounded-lg px-3.5 py-2 font-mono text-xs font-bold border transition ${
-              session.network_id === "IEEE_30"
-                ? "bg-cyan-500 text-slate-950 border-cyan-400"
-                : "bg-slate-800 text-slate-200 border-slate-700"
-            }`}
-          >
-            IEEE 30-Bus Transmission
-          </button>
-          <button
-            onClick={() => resetSession("IEEE_33_DISTRIBUTION", null, null)}
-            className={`rounded-lg px-3.5 py-2 font-mono text-xs font-bold border transition ${
-              session.network_id === "IEEE_33_DISTRIBUTION"
-                ? "bg-cyan-500 text-slate-950 border-cyan-400"
-                : "bg-slate-800 text-slate-200 border-slate-700"
-            }`}
-          >
-            IEEE 33-Bus Distribution
-          </button>
-        </div>
+        <span className="text-xs text-slate-500">
+          {loading
+            ? "Solving network…"
+            : bus
+              ? session.power_flow.power_balance?.converged
+                ? "AC model converged"
+                : "AC model · convergence not confirmed"
+              : "Reference geography · electrical data unavailable"}
+        </span>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        <div className="lg:col-span-7">
-          <CityCanvas3D heightClass="h-[520px]" />
-        </div>
-
-        <div className="lg:col-span-5 scada-panel rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-            <h2 className="font-mono text-sm font-bold text-white">
-              Substations & Inter-Regional Corridors ({buses.length} Buses / {lines.length} Lines)
-            </h2>
-            <span className="rounded bg-emerald-500/20 px-2 py-0.5 font-mono text-[10px] text-emerald-300">
-              AC_SOLVED • 50.00 Hz IEGC
-            </span>
-          </div>
-
-          <div className="max-h-[440px] overflow-y-auto space-y-2 pr-1">
-            {lines.slice(0, 18).map((ln) => (
-              <div
-                key={ln.line_id}
-                className="flex items-center justify-between rounded-lg bg-[#06090F] p-2.5 border border-slate-800 font-mono text-xs"
-              >
-                <div>
-                  <div className="font-bold text-cyan-300">
-                    {ln.line_id} ({ln.from_bus} → {ln.to_bus})
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    Flow: {ln.p_from_mw.toFixed(1)} MW • Loading: {ln.loading_percent.toFixed(1)}%
-                  </div>
-                </div>
-                <button
-                  onClick={() =>
-                    applyAction(
-                      ln.status === "OUT_OF_SERVICE" ? "CLEAR_FAULT" : "INJECT_FAULT",
-                      ln.line_id
-                    )
-                  }
-                  className={`rounded px-2.5 py-1 text-[10px] font-bold border ${
-                    ln.status === "OUT_OF_SERVICE"
-                      ? "bg-red-500/20 border-red-500/40 text-red-200"
-                      : "bg-slate-800 border-slate-700 text-slate-200 hover:border-red-500/40"
-                  }`}
-                >
-                  {ln.status === "OUT_OF_SERVICE" ? "Reclose" : "N-1 Trip"}
-                </button>
-              </div>
+      {error && (
+        <p role="status" className="text-amber-700 text-sm">
+          {error}
+        </p>
+      )}
+      <div className="workspace">
+        <aside className="presentation-hide">
+          <div className="eyebrow">Map controls</div>
+          <label htmlFor="region">Region</label>
+          <select
+            id="region"
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+          >
+            {[
+              ["ALL", "All India"],
+              ["NR", "Northern"],
+              ["WR", "Western"],
+              ["SR", "Southern"],
+              ["ER", "Eastern"],
+              ["NER", "North Eastern"],
+            ].map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
             ))}
-          </div>
+          </select>
+          <label htmlFor="overlay">Overlay</label>
+          <select
+            id="overlay"
+            value={overlay}
+            onChange={(e) => setOverlay(e.target.value)}
+          >
+            {["Connectivity", "Regions", "Voltage", "Incidents"].map((o) => (
+              <option key={o}>{o}</option>
+            ))}
+          </select>
+          <label htmlFor="station">Find substation</label>
+          <select
+            id="station"
+            value={selected}
+            onChange={(e) => {
+              setSelected(e.target.value);
+              setRegion("ALL");
+            }}
+          >
+            {indiaNodes.map((n) => (
+              <option value={n.id} key={n.id}>
+                {n.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-slate-500 mt-8">
+            Select a state to highlight its geography. Select a node to inspect
+            its connected corridors.
+          </p>
+          <Link href="/dashboard" className="block text-blue-700 text-sm mt-8">
+            Power-flow dashboard ↗
+          </Link>
+        </aside>
+        <div className="presentation-expand">
+          <IndiaMap
+            region={region}
+            overlay={overlay}
+            selected={selected}
+            onSelect={setSelected}
+          />
         </div>
+        <aside className="presentation-hide">
+          <div className="eyebrow">Selected substation</div>
+          <h2 className="text-xl font-semibold mt-4 mb-2">{n.name}</h2>
+          <p className="text-sm text-slate-500 mb-5">
+            {n.state} · {n.region}
+          </p>
+          <div className="detail-stat">
+            <span>Reference capacity</span>
+            <strong>{n.capacityMW.toLocaleString()} MW</strong>
+          </div>
+          <div className="detail-stat">
+            <span>Bus voltage</span>
+            <strong>
+              {bus ? `${bus.voltage_pu.toFixed(3)} pu` : "Unavailable"}
+            </strong>
+          </div>
+          <div className="detail-stat">
+            <span>Connected corridors</span>
+            <strong>{bus ? lines.length : "—"}</strong>
+          </div>
+          <p className="text-xs text-slate-500 mt-4">{n.voltage}</p>
+          <details className="mt-5">
+            <summary>Corridor operations</summary>
+            {lines.length ? (
+              lines.map((l) => (
+                <div key={l.line_id} className="py-3 border-t border-slate-200">
+                  <p className="text-xs mb-2">
+                    {l.name} · {l.loading_percent.toFixed(1)}%
+                  </p>
+                  <button
+                    disabled={loading}
+                    className="quiet-button"
+                    onClick={() =>
+                      applyAction(
+                        l.status === "OUT_OF_SERVICE"
+                          ? "CLEAR_FAULT"
+                          : "INJECT_FAULT",
+                        l.line_id,
+                      )
+                    }
+                  >
+                    {l.status === "OUT_OF_SERVICE" ? "Reclose" : "N-1 trip"}
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-slate-500">
+                No solved corridors available.
+              </p>
+            )}
+          </details>
+        </aside>
       </div>
+      <details className="scada-panel rounded-xl p-5 presentation-hide">
+        <summary>Network statistics & geographic provenance</summary>
+        <p className="text-sm text-slate-500">
+          Reference topology from the repository’s India grid dataset; not live
+          operational telemetry. Geographic boundaries from india-maps-data
+          (2011 census district geometries, grouped by state; administrative
+          boundaries may differ from current boundaries). Geometry is bundled
+          locally; no map service or token required.
+        </p>
+        <a
+          className="text-blue-700 text-sm"
+          href="https://github.com/udit-001/india-maps-data"
+        >
+          Boundary source ↗
+        </a>
+        <p className="mt-3 text-sm">
+          {live ? session.power_flow.buses.length : 0} solved buses ·{" "}
+          {live ? session.power_flow.lines.length : 0} solved corridors ·{" "}
+          {live ? session.kpis.active_faults_count : 0} active model faults
+        </p>
+      </details>
     </div>
   );
 }
-

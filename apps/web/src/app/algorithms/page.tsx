@@ -139,7 +139,7 @@ export default function AlgorithmsLabPage() {
         if (firstStep) {
           setTraceHighlight(
             firstStep.active_nodes || firstStep.visited_nodes || [],
-            firstStep.active_edges || firstStep.selected_edges || []
+            firstStep.active_edges || firstStep.selected_edges || [],
           );
         }
       }
@@ -164,101 +164,117 @@ export default function AlgorithmsLabPage() {
     const st = steps[clamped];
     if (st) {
       setTraceHighlight(
-        Array.from(new Set([...(st.active_nodes || []), ...(st.visited_nodes || [])])),
-        Array.from(new Set([...(st.active_edges || []), ...(st.selected_edges || [])]))
+        Array.from(
+          new Set([...(st.active_nodes || []), ...(st.visited_nodes || [])]),
+        ),
+        Array.from(
+          new Set([...(st.active_edges || []), ...(st.selected_edges || [])]),
+        ),
       );
     }
   };
 
   return (
-    <div className="flex-1 scada-grid-bg p-4 lg:p-6 space-y-5">
+    <div className="flex-1 scada-grid-bg p-5 lg:p-10 space-y-5">
       {/* Header Banner */}
-      <div className="scada-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 border-violet-500/30">
+      <div className="scada-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 border-blue-200">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-500/15 px-3 py-1 border border-violet-500/30 font-mono text-xs text-violet-300 mb-1.5">
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 border border-blue-200 font-sans text-xs text-blue-700 mb-1.5">
             EXPERIENCE C • EXPLAINABLE DATA STRUCTURES & ALGORITHMS LABORATORY
           </div>
-          <h1 className="text-2xl font-extrabold text-white">
+          <h1 className="text-2xl font-extrabold text-slate-900">
             13-Algorithm Interactive Graph, DP & Telemetry Trace Inspector
           </h1>
-          <p className="text-xs text-slate-300 mt-1">
-            Execute authentic graph traversals, shortest-impedance routing, bridge detection, spanning trees, 0/1 Knapsack DP, and Min-Cost Max-Flow on the live electrical network with step-by-step data-structure state replay.
+          <p className="text-xs text-slate-600 mt-1">
+            Execute authentic graph traversals, shortest-impedance routing,
+            bridge detection, spanning trees, 0/1 Knapsack DP, and Min-Cost
+            Max-Flow on the live electrical network with step-by-step
+            data-structure state replay.
           </p>
         </div>
         <Link
           href="/algorithms/caper"
-          className="flex items-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-500 px-4 py-2.5 font-mono text-xs font-bold text-white shadow-[0_0_20px_rgba(139,92,246,0.35)] transition"
+          className="flex items-center gap-2 rounded-xl bg-blue-800 hover:bg-blue-800 px-4 py-2.5 font-sans text-xs font-bold text-white shadow-sm transition"
         >
           <Sparkles className="h-4 w-4" /> Inspect 8-Stage CAPER Engine
         </Link>
       </div>
 
       {/* 13 Algorithm Selector Pills */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-2">
-        {ALGORITHMS_LIST.map((alg) => (
-          <button
-            key={alg.id}
-            onClick={() => runAlgorithm(alg.id)}
-            className={`text-left rounded-lg p-2.5 border font-mono transition ${
-              selectedAlgo === alg.id
-                ? "bg-violet-600/25 border-violet-400 text-white shadow-[0_0_15px_rgba(139,92,246,0.2)]"
-                : "bg-[#0B111C] border-slate-800 text-slate-300 hover:border-slate-700"
-            }`}
-          >
-            <div className="text-xs font-bold text-violet-300">{alg.id}</div>
-            <div className="text-[10px] text-slate-300 line-clamp-1 mt-0.5">{alg.name}</div>
-            <div className="text-[9px] text-cyan-400/90 mt-1">{alg.complexity.split(" / ")[0]}</div>
-          </button>
-        ))}
+      <div className="scada-panel rounded-xl p-4 flex flex-wrap gap-5 items-center">
+        <label htmlFor="algorithm" className="text-sm font-medium">
+          Algorithm
+        </label>
+        <select
+          id="algorithm"
+          value={selectedAlgo}
+          onChange={(e) => runAlgorithm(e.target.value)}
+          className="max-w-full min-w-0 rounded border border-slate-200 p-2 bg-slate-50"
+        >
+          {ALGORITHMS_LIST.map((a) => (
+            <option value={a.id} key={a.id}>
+              {a.name} · {a.complexity}
+            </option>
+          ))}
+        </select>
+        <button
+          className="primary-button"
+          disabled={loading}
+          onClick={() => runAlgorithm(selectedAlgo)}
+        >
+          {loading ? "Running…" : "Run algorithm"}
+        </button>
       </div>
 
       {/* Main Split Workspace: Left Step-by-Step DSA Trace & Data Structure State | Right 3D City Trace Overlay */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left: Step Replay Controls, Pseudocode & Internal Frontier State */}
-        <div className="lg:col-span-6 space-y-4">
+        <div className="lg:col-span-4 space-y-4 presentation-hide">
           <div className="scada-panel rounded-xl p-4 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
               <div>
-                <h2 className="font-mono text-sm font-bold text-white">
+                <h2 className="font-sans text-sm font-bold text-slate-900">
                   {trace?.algorithm_name || selectedAlgo}
                 </h2>
-                <p className="font-mono text-[11px] text-violet-300">
-                  Time: {trace?.theoretical_time_complexity || "O(V + E)"} • Space:{" "}
-                  {trace?.theoretical_space_complexity || "O(V)"} • Ops:{" "}
-                  {trace?.empirical_operations || 18} ({trace?.execution_time_ms || 0.25} ms)
+                <p className="font-sans text-xs text-blue-700">
+                  Time: {trace?.theoretical_time_complexity || "O(V + E)"} •
+                  Space: {trace?.theoretical_space_complexity || "O(V)"} • Ops:{" "}
+                  {trace?.empirical_operations || 18} (
+                  {trace?.execution_time_ms || 0.25} ms)
                 </p>
               </div>
 
               {/* Stepper Controls */}
-              <div className="flex items-center gap-1.5 font-mono text-xs">
+              <div className="flex items-center gap-1.5 font-sans text-xs">
                 <button
                   onClick={() => handleStepChange(0)}
                   disabled={stepIdx === 0}
-                  className="rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 px-2 py-1 text-slate-200"
+                  className="rounded bg-slate-100 hover:bg-slate-100 disabled:opacity-40 px-2 py-1 text-slate-700"
                 >
                   |&lt;
                 </button>
                 <button
                   onClick={() => handleStepChange(stepIdx - 1)}
                   disabled={stepIdx === 0}
-                  className="rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 px-2.5 py-1 text-slate-200 flex items-center gap-1"
+                  className="rounded bg-slate-100 hover:bg-slate-100 disabled:opacity-40 px-2.5 py-1 text-slate-700 flex items-center gap-1"
                 >
                   <SkipBack className="h-3 w-3" /> Prev
                 </button>
-                <span className="rounded bg-violet-500/20 border border-violet-500/40 px-2.5 py-1 text-violet-200 font-bold">
-                  Step {steps.length > 0 ? stepIdx + 1 : 1} / {Math.max(1, steps.length)}
+                <span className="rounded bg-blue-50 border border-blue-200 px-2.5 py-1 text-blue-700 font-bold">
+                  Step {steps.length > 0 ? stepIdx + 1 : 1} /{" "}
+                  {Math.max(1, steps.length)}
                 </span>
                 <button
                   onClick={() => handleStepChange(stepIdx + 1)}
                   disabled={stepIdx >= steps.length - 1}
-                  className="rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 px-2.5 py-1 text-slate-200 flex items-center gap-1"
+                  className="rounded bg-slate-100 hover:bg-slate-100 disabled:opacity-40 px-2.5 py-1 text-slate-700 flex items-center gap-1"
                 >
                   Next <SkipForward className="h-3 w-3" />
                 </button>
                 <button
                   onClick={() => handleStepChange(steps.length - 1)}
                   disabled={stepIdx >= steps.length - 1}
-                  className="rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 px-2 py-1 text-slate-200"
+                  className="rounded bg-slate-100 hover:bg-slate-100 disabled:opacity-40 px-2 py-1 text-slate-700"
                 >
                   &gt;|
                 </button>
@@ -267,39 +283,46 @@ export default function AlgorithmsLabPage() {
 
             {/* Active Step Operation Banner */}
             {currentStep && (
-              <div className="rounded-lg bg-violet-950/35 border border-violet-500/40 p-3 space-y-1">
-                <div className="flex items-center justify-between font-mono text-xs">
-                  <span className="font-bold text-violet-300">
+              <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 space-y-1">
+                <div className="flex items-center justify-between font-sans text-xs">
+                  <span className="font-bold text-blue-700">
                     [{currentStep.operation}]
                   </span>
-                  <span className="text-[11px] text-cyan-300">
-                    Active Nodes: {(currentStep.active_nodes || []).join(", ") || "—"}
+                  <span className="text-xs text-blue-700">
+                    Active Nodes:{" "}
+                    {(currentStep.active_nodes || []).join(", ") || "—"}
                   </span>
                 </div>
-                <p className="text-xs text-slate-200">{currentStep.description}</p>
+                <p className="text-xs text-slate-700">
+                  {currentStep.description}
+                </p>
               </div>
             )}
 
             {/* Pseudocode with Highlighted Active Line */}
-            <div>
-              <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase text-slate-400 mb-1.5">
-                <Code2 className="h-3.5 w-3.5 text-cyan-400" /> Synchronized Pseudocode Trace:
+            <details className="presentation-hide">
+              <summary>Pseudocode</summary>
+              <div className="flex items-center gap-1.5 font-sans text-xs uppercase text-slate-500 mb-1.5">
+                <Code2 className="h-3.5 w-3.5 text-blue-700" /> Synchronized
+                Pseudocode Trace:
               </div>
-              <div className="rounded-lg bg-[#06090F] p-3 border border-slate-800 font-mono text-xs space-y-1">
-                {(trace?.pseudocode || [
-                  "1. function ExecuteGridAlgorithm(G, source):",
-                  "2.   initialize frontier data structure (Deque / Heap / DSU / DP)",
-                  "3.   step through electrical buses and branch impedances",
-                  "4.   emit verified topological or optimization output",
-                ]).map((line: string, i: number) => {
+              <div className="rounded-lg bg-slate-50 p-3 border border-slate-200 font-sans text-xs space-y-1">
+                {(
+                  trace?.pseudocode || [
+                    "1. function ExecuteGridAlgorithm(G, source):",
+                    "2.   initialize frontier data structure (Deque / Heap / DSU / DP)",
+                    "3.   step through electrical buses and branch impedances",
+                    "4.   emit verified topological or optimization output",
+                  ]
+                ).map((line: string, i: number) => {
                   const isLineActive = currentStep?.pseudocode_line === i + 1;
                   return (
                     <div
                       key={i}
                       className={`rounded px-2 py-0.5 ${
                         isLineActive
-                          ? "bg-violet-500/25 text-violet-200 border-l-2 border-violet-400 font-bold"
-                          : "text-slate-400"
+                          ? "bg-blue-50 text-blue-700 border-l-2 border-blue-200 font-bold"
+                          : "text-slate-500"
                       }`}
                     >
                       {line}
@@ -307,24 +330,30 @@ export default function AlgorithmsLabPage() {
                   );
                 })}
               </div>
-            </div>
+            </details>
 
             {/* Internal Data Structure Frontier State Inspector */}
-            <div>
-              <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase text-slate-400 mb-1.5">
-                <Database className="h-3.5 w-3.5 text-emerald-400" /> Live Internal Data-Structure State (Queue / Heap / DSU / DP Table):
+            <details className="presentation-hide">
+              <summary>Queue / heap / DSU state</summary>
+              <div className="flex items-center gap-1.5 font-sans text-xs uppercase text-slate-500 mb-1.5">
+                <Database className="h-3.5 w-3.5 text-teal-700" /> Live Internal
+                Data-Structure State (Queue / Heap / DSU / DP Table):
               </div>
-              <pre className="rounded-lg bg-[#06090F] p-3 border border-slate-800 font-mono text-[11px] text-emerald-300 overflow-x-auto max-h-56">
-                {JSON.stringify(currentStep?.frontier_state || trace?.final_output || {}, null, 2)}
+              <pre className="rounded-lg bg-slate-50 p-3 border border-slate-200 font-sans text-xs text-teal-700 overflow-x-auto max-h-56">
+                {JSON.stringify(
+                  currentStep?.frontier_state || trace?.final_output || {},
+                  null,
+                  2,
+                )}
               </pre>
-            </div>
+            </details>
 
             {/* Final Algorithm Output & Grid Engineering Meaning */}
-            <div className="rounded-lg bg-[#06090F] p-3 border border-slate-800 space-y-1.5">
-              <div className="font-mono text-[11px] font-bold uppercase text-cyan-400">
+            <div className="rounded-lg bg-slate-50 p-3 border border-slate-200 space-y-1.5">
+              <div className="font-sans text-xs font-bold uppercase text-blue-700">
                 Power Systems Engineering Significance:
               </div>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-slate-600">
                 {trace?.grid_engineering_meaning ||
                   "Provides deterministic topological and optimization primitives for emergency distribution feeder restoration."}
               </p>
@@ -333,19 +362,19 @@ export default function AlgorithmsLabPage() {
         </div>
 
         {/* Right: Synchronized 3D City Viewport Highlighting Active Trace Nodes/Edges */}
-        <div className="lg:col-span-6 space-y-4">
+        <div className="lg:col-span-8 space-y-4 presentation-expand">
           <CityCanvas3D heightClass="h-[520px]" />
-          <div className="scada-panel rounded-xl p-4">
-            <div className="font-mono text-xs font-bold uppercase text-slate-300 mb-2">
+          <details className="scada-panel rounded-xl p-4 presentation-hide">
+            <summary>Computed result</summary>
+            <div className="font-sans text-xs font-bold uppercase text-slate-600 mb-2">
               Final Computed Algorithm Output ({selectedAlgo}):
             </div>
-            <pre className="rounded-lg bg-[#06090F] p-3 border border-slate-800 font-mono text-[11px] text-cyan-300 overflow-x-auto max-h-48">
+            <pre className="rounded-lg bg-slate-50 p-3 border border-slate-200 font-sans text-xs text-blue-700 overflow-x-auto max-h-48">
               {JSON.stringify(trace?.final_output || {}, null, 2)}
             </pre>
-          </div>
+          </details>
         </div>
       </div>
     </div>
   );
 }
-

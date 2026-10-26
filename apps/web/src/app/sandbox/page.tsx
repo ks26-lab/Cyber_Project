@@ -7,39 +7,42 @@ import { useSimulationStore } from "@/store/useSimulationStore";
 import { Wrench, Sparkles, RotateCcw } from "lucide-react";
 
 export default function SandboxPage() {
-  const { session, resetSession, applyAction, applyRestorationPlan } = useSimulationStore();
+  const { session, resetSession, applyAction, applyRestorationPlan } =
+    useSimulationStore();
 
   return (
-    <div className="flex-1 scada-grid-bg p-4 lg:p-6 space-y-5">
-      <div className="scada-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 border-violet-500/30">
+    <div className="flex-1 scada-grid-bg p-5 lg:p-10 space-y-5">
+      <div className="scada-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 border-blue-200">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-500/15 px-3 py-1 border border-violet-500/30 font-mono text-xs text-violet-300 mb-1.5">
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 border border-blue-200 font-sans text-xs text-blue-700 mb-1.5">
             OPEN-ENDED ENGINEERING & TOPOLOGY SANDBOX
           </div>
-          <h1 className="text-2xl font-extrabold text-white">
+          <h1 className="text-2xl font-extrabold text-slate-900">
             Custom Contingency, BESS Horizon & Radial Reconfiguration Sandbox
           </h1>
-          <p className="text-xs text-slate-300 mt-1 max-w-3xl">
-            Compose arbitrary N-k fault combinations, test tie-switch closures, adjust upstream substation limits, and step discrete-time battery discharge across all 4 supported networks.
+          <p className="text-xs text-slate-600 mt-1 max-w-3xl">
+            Compose arbitrary N-k fault combinations, test tie-switch closures,
+            adjust upstream substation limits, and step discrete-time battery
+            discharge across all 4 supported networks.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => resetSession("TRAINING_FEEDER", null, null)}
-            className="rounded-lg bg-cyan-500/20 border border-cyan-400/50 px-3 py-2 font-mono text-xs text-cyan-200"
+            className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 font-sans text-xs text-blue-700"
           >
             12-Bus Urban Feeder
           </button>
           <button
             onClick={() => resetSession("IEEE_33_DISTRIBUTION", null, null)}
-            className="rounded-lg bg-violet-500/20 border border-violet-400/50 px-3 py-2 font-mono text-xs text-violet-200"
+            className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 font-sans text-xs text-blue-700"
           >
             IEEE 33-Bus Benchmark
           </button>
           <button
             onClick={() => applyRestorationPlan("CAPER")}
-            className="rounded-lg bg-emerald-500 px-3.5 py-2 font-mono text-xs font-bold text-slate-950"
+            className="rounded-lg bg-blue-800 px-3.5 py-2 font-sans text-xs font-bold text-white"
           >
             Run CAPER Solver
           </button>
@@ -57,4 +60,3 @@ export default function SandboxPage() {
     </div>
   );
 }
-
