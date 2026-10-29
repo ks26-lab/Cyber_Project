@@ -1,0 +1,63 @@
+{
+  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+  "restore3d": {
+    "critical": 100
+  },
+  "levels3d": [
+    {
+      "level": 1,
+      "score": 988,
+      "critical": 100
+    },
+    {
+      "level": 2,
+      "score": 793,
+      "critical": 100
+    },
+    {
+      "level": 3,
+      "score": 805,
+      "critical": 100
+    },
+    {
+      "level": 4,
+      "score": 780,
+      "critical": 100
+    },
+    {
+      "level": 5,
+      "score": 805,
+      "critical": 100
+    }
+  ],
+  "restore2d": {
+    "critical": 100
+  },
+  "levels2d": [
+    {
+      "level": 1,
+      "score": 988,
+      "critical": 100
+    },
+    {
+      "level": 2,
+      "score": 793,
+      "critical": 100
+    },
+    {
+      "level": 3,
+      "score": 805,
+      "critical": 100
+    },
+    {
+      "level": 4,
+      "score": 780,
+      "critical": 100
+    },
+    {
+      "level": 5,
+      "score": 805,
+      "critical": 100
+    }
+  ]
+}

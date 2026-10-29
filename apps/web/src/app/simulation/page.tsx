@@ -35,12 +35,13 @@ export default function SimulationCommandPage() {
     "BUILDINGS" | "CORRIDORS" | "COMPARE" | "LOG"
   >("BUILDINGS");
 
-  useEffect(() => {
-    fetchSession();
-  }, [fetchSession]);
-
   const kpis = session.kpis;
-  const pb = session.power_flow?.power_balance;
+  const feasible =
+    session.solver_provenance === "AC_SOLVED" &&
+    session.power_flow.power_balance.converged &&
+    session.power_flow.violations.length === 0;
+  const unavailable =
+    loading || session.solver_provenance === "REFERENCE_PREVIEW";
 
   return (
     <div className="flex-1 scada-grid-bg p-5 lg:p-10 space-y-4">
@@ -61,6 +62,7 @@ export default function SimulationCommandPage() {
             aria-label="Simulation network"
             className="ml-3 rounded border border-slate-200 p-2"
             value={session.network_id}
+            disabled={loading}
             onChange={(e) => resetSession(e.target.value, null, null)}
           >
             {[
@@ -78,7 +80,7 @@ export default function SimulationCommandPage() {
         </Link>
         <button
           className="quiet-button"
-          disabled={loading}
+          disabled={unavailable || session.revision <= 1}
           onClick={() => undoAction()}
         >
           Undo
@@ -93,9 +95,12 @@ export default function SimulationCommandPage() {
       </div>
       <div className="metric-strip">
         {[
-          ["Demand served", `${kpis.total_load_restored_pct.toFixed(1)}%`],
           [
-            "Critical load served",
+            feasible ? "Verified demand supplied" : "Attempted demand supply",
+            `${kpis.total_load_restored_pct.toFixed(1)}%`,
+          ],
+          [
+            feasible ? "Verified critical supply" : "Attempted critical supply",
             `${kpis.critical_load_restored_pct.toFixed(1)}%`,
           ],
           ["Active faults", String(kpis.active_faults_count)],
@@ -120,7 +125,7 @@ export default function SimulationCommandPage() {
 
       {/* Main Split Workspace: Left 3D City + Bottom Telemetry Tables | Right Inspector */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        <div className="lg:col-span-8 space-y-4 presentation-expand">
+        <div className="lg:col-span-8 min-w-0 space-y-4 presentation-expand">
           <CityCanvas3D heightClass="h-[540px]" />
 
           {/* Bottom Interactive Telemetry & Multi-Algorithm Comparison Drawer */}
@@ -130,7 +135,7 @@ export default function SimulationCommandPage() {
               action log
             </summary>
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 mb-3">
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {(
                   [
                     [
@@ -168,6 +173,7 @@ export default function SimulationCommandPage() {
               </div>
 
               <button
+                disabled={unavailable}
                 onClick={() => {
                   setBottomTab("COMPARE");
                   compareRestorations();
@@ -202,7 +208,13 @@ export default function SimulationCommandPage() {
                         }`}
                       >
                         <td className="py-2 px-2 font-bold text-blue-700">
-                          {b.bus_id}
+                          <button
+                            className="text-left underline-offset-2 hover:underline"
+                            onClick={() => setSelectedAssetId(b.bus_id)}
+                            aria-label={`Inspect ${b.name} in the telemetry table`}
+                          >
+                            {b.bus_id}
+                          </button>
                         </td>
                         <td className="py-2 px-2 text-slate-700">{b.name}</td>
                         <td className="py-2 px-2">
@@ -241,6 +253,11 @@ export default function SimulationCommandPage() {
                         <td className="py-2 px-2">
                           {b.demand_mw > 0 && (
                             <button
+                              disabled={
+                                unavailable ||
+                                (b.curtailed_mw <= 0 &&
+                                  b.demand_mw - b.critical_load_mw <= 0)
+                              }
                               onClick={(e) => {
                                 e.stopPropagation();
                                 applyAction(
@@ -249,7 +266,7 @@ export default function SimulationCommandPage() {
                                     : "CURTAIL_LOAD",
                                   b.bus_id,
                                   Math.max(
-                                    0.2,
+                                    0,
                                     +(b.demand_mw - b.critical_load_mw).toFixed(
                                       2,
                                     ),
@@ -291,7 +308,13 @@ export default function SimulationCommandPage() {
                         className="cursor-pointer hover:bg-slate-100"
                       >
                         <td className="py-2 px-2 font-bold text-blue-700">
-                          {ln.line_id}
+                          <button
+                            className="text-left underline-offset-2 hover:underline"
+                            onClick={() => setSelectedAssetId(ln.line_id)}
+                            aria-label={`Inspect ${ln.name} in the telemetry table`}
+                          >
+                            {ln.line_id}
+                          </button>
                         </td>
                         <td className="py-2 px-2 text-slate-600">
                           {ln.from_bus} → {ln.to_bus}
@@ -316,6 +339,7 @@ export default function SimulationCommandPage() {
                         <td className="py-2 px-2">{ln.pl_mw.toFixed(4)} MW</td>
                         <td className="py-2 px-2">
                           <button
+                            disabled={unavailable}
                             onClick={(e) => {
                               e.stopPropagation();
                               applyAction(
@@ -341,14 +365,19 @@ export default function SimulationCommandPage() {
 
             {bottomTab === "COMPARE" && (
               <div className="overflow-x-auto">
+                <p className="text-xs text-slate-500 mb-3">
+                  Load percentages include attempted supply. Only rows marked
+                  feasible pass AC checks; graph connectivity alone does not
+                  verify supply.
+                </p>
                 {comparisonResult?.comparison_table ? (
                   <table className="w-full text-left font-sans text-xs">
                     <thead className="text-xs uppercase text-slate-500 border-b border-slate-200">
                       <tr>
                         <th className="py-2 px-2">Algorithm</th>
                         <th className="py-2 px-2">AC Feasible</th>
-                        <th className="py-2 px-2">Crit Restored (%)</th>
-                        <th className="py-2 px-2">Total Restored (%)</th>
+                        <th className="py-2 px-2">Attempted Critical (%)</th>
+                        <th className="py-2 px-2">Attempted Total (%)</th>
                         <th className="py-2 px-2">Min V (pu)</th>
                         <th className="py-2 px-2">Max Load (%)</th>
                         <th className="py-2 px-2">Switches</th>
@@ -364,12 +393,14 @@ export default function SimulationCommandPage() {
                           <td className="py-2 px-2">
                             <span
                               className={`rounded px-1.5 py-0.5 text-xs font-bold ${
-                                row.feasible
+                                row.feasible && row.ac_validated
                                   ? "bg-teal-50 text-teal-700"
                                   : "bg-red-50 text-red-700"
                               }`}
                             >
-                              {row.feasible ? "FEASIBLE" : "VIOLATION"}
+                              {row.feasible && row.ac_validated
+                                ? "FEASIBLE"
+                                : "UNVERIFIED"}
                             </span>
                           </td>
                           <td className="py-2 px-2 font-bold text-teal-700">
@@ -426,7 +457,7 @@ export default function SimulationCommandPage() {
         </div>
 
         {/* Right Column: Live Engineering Inspector & CAPER Controls */}
-        <div className="lg:col-span-4 presentation-hide">
+        <div className="lg:col-span-4 min-w-0 presentation-hide">
           <EngineeringInspector />
         </div>
       </div>

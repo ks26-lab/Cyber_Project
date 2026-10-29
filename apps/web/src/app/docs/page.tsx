@@ -23,16 +23,36 @@ export default function DocumentationHubPage() {
         </h1>
         <p className="text-sm text-slate-600 mt-1 max-w-4xl">
           Complete engineering reference covering the hybrid Next.js + FastAPI +
-          pandapower architecture, the 13 Data Structures & Algorithms, the
+          pandapower architecture, the 14 Data Structures & Algorithms, the
           8-stage CAPER restoration formulation, and reproducible benchmark
           methodology.
         </p>
       </div>
 
+      <section className="scada-panel rounded-xl p-5 space-y-3">
+        <h2 className="text-lg font-semibold">
+          GRID COMMAND and graphics resilience
+        </h2>
+        <p>
+          Five restoration levels use named backend sessions, real AC
+          calculations, turn and repair budgets, score breakdowns, undo and
+          replay. Algorithms explain actual graph states; hints do not
+          automatically dispatch an electrically feasible plan.
+        </p>
+        <p>
+          Every 3D entry point checks WebGL before loading the scene.
+          Unsupported graphics and context loss switch to an interactive SVG
+          view with the same assets, switches and calculated electrical state. A
+          cached failure prevents repeated renderer attempts.
+        </p>
+        <Link className="secondary-button" href="/grid-command">
+          Play Grid Command →
+        </Link>
+      </section>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="scada-panel rounded-xl p-5 space-y-3">
           <h2 className="font-sans text-sm font-bold text-blue-700 flex items-center gap-2">
-            <Cpu className="h-4 w-4" /> 1. 13-Algorithm DSA Catalog & Complexity
+            <Cpu className="h-4 w-4" /> 1. 14-Algorithm DSA Catalog & Complexity
           </h2>
           <p className="text-xs text-slate-600 leading-relaxed">
             Every algorithm in{" "}
@@ -70,8 +90,7 @@ export default function DocumentationHubPage() {
               under deficit
             </li>
             <li>
-              Successive Shortest-Path Min-Cost Max-Flow: O(F · E log V) —
-              Multi-source routing
+              Edmonds-Karp Max-Flow / Min-Cut: O(V · E²) — Multi-source routing
             </li>
             <li>
               A* Spatial-Electrical Routing: O((V + E) log V) — 3D heuristic
@@ -151,8 +170,10 @@ export default function DocumentationHubPage() {
             All legacy GRIDSEC routes, backend services, daily fairness
             scheduler, cyber detection engine, and standalone HTML/JS interfaces
             (<code>index.html</code>, <code>app.html</code>,{" "}
-            <code>game.html</code> served on port 8000) remain 100% preserved
-            and verified by 328 passing pytest unit and integration tests.
+            <code>game.html</code> served on port 8000) remain available
+            alongside the modern application. Verification covers backend
+            calculations, game actions and browser fallback workflows; see the
+            repository verification report for current results.
           </p>
           <div className="flex items-center gap-3 pt-2">
             <a

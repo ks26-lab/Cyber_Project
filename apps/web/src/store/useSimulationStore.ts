@@ -10,7 +10,8 @@ export interface Building3DState {
   priority_tier: number;
   criticality_weight: number;
   position_3d: [number, number, number];
-  power_state: "ENERGIZED" | "BACKUP_BATTERY" | "CURTAILED" | "BLACKOUT" | "SOURCE_ACTIVE";
+  power_state:
+    "ENERGIZED" | "BACKUP_BATTERY" | "CURTAILED" | "BLACKOUT" | "SOURCE_ACTIVE";
   voltage_pu: number;
   voltage_kv: number;
   demand_mw: number;
@@ -109,6 +110,14 @@ export interface PowerFlowResult {
   scenario_id: string;
   buses: BusResult[];
   lines: LineResult[];
+  transformers?: Array<{
+    transformer_id: string;
+    name: string;
+    from_bus: string;
+    to_bus: string;
+    status: string;
+    loading_percent: number;
+  }>;
   violations: Violation[];
   power_balance: {
     total_generation_mw: number;
@@ -470,7 +479,8 @@ const INITIAL_SESSION: SimulationSessionState = {
   ],
   power_flow: {
     status: "SUCCESS",
-    message: "AC Power Flow converged in 3 iterations. Kirchhoff power balance verified.",
+    message:
+      "AC Power Flow converged in 3 iterations. Kirchhoff power balance verified.",
     network_id: "TRAINING_FEEDER",
     scenario_id: "BASE_CASE",
     buses: INITIAL_BUILDINGS_3D.map((b) => ({
@@ -728,7 +738,8 @@ const INITIAL_SESSION: SimulationSessionState = {
       revision: 1,
       timestamp: "2026-10-25T15:00:00Z",
       action: "INITIALIZE_SESSION",
-      description: "Initialized TRAINING_FEEDER 12-bus urban distribution feeder (AC_SOLVED).",
+      description:
+        "Initialized TRAINING_FEEDER 12-bus urban distribution feeder (AC_SOLVED).",
     },
   ],
   kpis: {
@@ -750,14 +761,22 @@ const INITIAL_SESSION: SimulationSessionState = {
     active_violations_count: 0,
     city_survival_index: 100.0,
   },
-  solver_provenance: "AC_SOLVED",
+  solver_provenance: "REFERENCE_PREVIEW",
 };
 
 interface SimulationStore {
   session: SimulationSessionState;
   selectedAssetId: string | null;
-  cameraPreset: "ISOMETRIC" | "TOP_DOWN" | "HOSPITAL" | "SUBSTATION" | "FAULT" | "FREE";
-  overlayMode: "ENERGIZATION" | "CRITICALITY" | "VOLTAGE" | "THERMAL" | "ALGORITHM_TRACE";
+  cameraPreset:
+    | "ISOMETRIC"
+    | "TOP_DOWN"
+    | "HOSPITAL"
+    | "SUBSTATION"
+    | "FAULT"
+    | "RESTORATION"
+    | "FREE";
+  overlayMode:
+    "ENERGIZATION" | "CRITICALITY" | "VOLTAGE" | "THERMAL" | "ALGORITHM_TRACE";
   activeTraceNodeIds: string[];
   activeTraceEdgeIds: string[];
   caperResult: any | null;
@@ -772,19 +791,41 @@ interface SimulationStore {
   setTraceHighlight: (nodes: string[], edges: string[]) => void;
 
   fetchSession: (networkId?: string) => Promise<void>;
-  resetSession: (networkId?: string, missionId?: string | null, sourceCapMw?: number | null) => Promise<void>;
-  applyAction: (actionType: string, targetId: string, value?: number | null) => Promise<void>;
+  resetSession: (
+    networkId?: string,
+    missionId?: string | null,
+    sourceCapMw?: number | null,
+  ) => Promise<void>;
+  applyAction: (
+    actionType: string,
+    targetId: string,
+    value?: number | null,
+  ) => Promise<void>;
   undoAction: () => Promise<void>;
   runCaper: () => Promise<any>;
   compareRestorations: () => Promise<any>;
   applyRestorationPlan: (algorithm?: string) => Promise<void>;
 }
 
-const API_BASE = typeof window !== "undefined" ? "/api/gridzero" : "http://127.0.0.1:8000/api/gridzero";
+async function requireOk(response: Response) {
+  if (response.ok) return;
+  let message = `Request failed (${response.status})`;
+  try {
+    const body = await response.json();
+    message = typeof body.detail === "string" ? body.detail : message;
+  } catch {}
+  throw new Error(message);
+}
+
+const API_BASE =
+  typeof window !== "undefined"
+    ? "/api/gridzero"
+    : "http://127.0.0.1:8000/api/gridzero";
 
 function sanitizeSession(s: any): SimulationSessionState {
   if (!s) return INITIAL_SESSION;
-  const num = (v: any, fallback = 0) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
+  const num = (v: any, fallback = 0) =>
+    typeof v === "number" && Number.isFinite(v) ? v : fallback;
   return {
     ...s,
     buildings_3d: (s.buildings_3d || []).map((b: any) => ({
@@ -841,14 +882,17 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   setSelectedAssetId: (id) => set({ selectedAssetId: id }),
   setCameraPreset: (preset) => set({ cameraPreset: preset }),
   setOverlayMode: (mode) => set({ overlayMode: mode }),
-  setTraceHighlight: (nodes, edges) => set({ activeTraceNodeIds: nodes, activeTraceEdgeIds: edges }),
+  setTraceHighlight: (nodes, edges) =>
+    set({ activeTraceNodeIds: nodes, activeTraceEdgeIds: edges }),
 
   fetchSession: async (networkId) => {
     const net = networkId || get().session.network_id || "TRAINING_FEEDER";
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/session?network_id=${encodeURIComponent(net)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const res = await fetch(
+        `${API_BASE}/session?network_id=${encodeURIComponent(net)}`,
+      );
+      await requireOk(res);
       const data = await res.json();
       if (data.session) {
         set({ session: sanitizeSession(data.session), loading: false });
@@ -856,7 +900,12 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         set({ loading: false });
       }
     } catch (err: any) {
-      set({ loading: false, error: err?.message || "Using cached authoritative session" });
+      set({
+        loading: false,
+        error:
+          err?.message ||
+          "Backend unavailable; the reference preview is not a solved operating state",
+      });
     }
   },
 
@@ -873,7 +922,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
           source_capacity_limit_mw: sourceCapMw ?? null,
         }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await requireOk(res);
       const data = await res.json();
       set({
         session: data.session ? sanitizeSession(data.session) : get().session,
@@ -899,11 +948,13 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
           value,
         }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await requireOk(res);
       const data = await res.json();
       set({
         session: data.session ? sanitizeSession(data.session) : get().session,
         missionEvaluation: data.evaluation || get().missionEvaluation,
+        caperResult: null,
+        comparisonResult: null,
         loading: false,
       });
     } catch (err: any) {
@@ -915,11 +966,13 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const res = await fetch(`${API_BASE}/session/undo`, { method: "POST" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await requireOk(res);
       const data = await res.json();
       set({
         session: data.session ? sanitizeSession(data.session) : get().session,
         missionEvaluation: data.evaluation || get().missionEvaluation,
+        caperResult: null,
+        comparisonResult: null,
         loading: false,
       });
     } catch (err: any) {
@@ -935,7 +988,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ switching_budget: 5 }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await requireOk(res);
       const data = await res.json();
       set({ caperResult: data, loading: false });
       return data;
@@ -953,9 +1006,13 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ switching_budget: 5 }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await requireOk(res);
       const data = await res.json();
-      set({ comparisonResult: data, caperResult: data.caper || get().caperResult, loading: false });
+      set({
+        comparisonResult: data,
+        caperResult: data.caper || get().caperResult,
+        loading: false,
+      });
       return data;
     } catch (err: any) {
       set({ loading: false, error: err?.message || "Comparison failed" });
@@ -971,11 +1028,13 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ algorithm, switching_budget: 5 }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await requireOk(res);
       const data = await res.json();
       set({
-        session: data.session || get().session,
+        session: data.session ? sanitizeSession(data.session) : get().session,
         missionEvaluation: data.evaluation || get().missionEvaluation,
+        caperResult: null,
+        comparisonResult: null,
         loading: false,
       });
     } catch (err: any) {

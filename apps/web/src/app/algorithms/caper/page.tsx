@@ -14,78 +14,6 @@ import {
   Cpu,
 } from "lucide-react";
 
-const DEFAULT_STAGES = [
-  {
-    stage_number: 1,
-    stage_name: "Incident Understanding & Resource Accounting",
-    algorithm_used: "O(1) Hash Table Asset Lookup + BESS Energy Budget Auditor",
-    summary:
-      "Identified faulted corridors, upstream supply limit, and available BESS discharge power (kW) & energy (kWh).",
-    duration_ms: 0.42,
-  },
-  {
-    stage_number: 2,
-    stage_name: "Topological Graph Analysis",
-    algorithm_used:
-      "BFS (O(1) Deque) + Disjoint Set Union (DSU) + Tarjan Bridge Detection",
-    summary:
-      "Partitioned network into energized and de-energized islands; identified single-point-of-failure bridge branches.",
-    duration_ms: 0.85,
-  },
-  {
-    stage_number: 3,
-    stage_name: "Criticality Triage & Deficit Allocation",
-    algorithm_used:
-      "Binary Max-Heap Triage + 0/1 & Continuous Knapsack Dynamic Programming",
-    summary:
-      "Prioritized Tier-1 life-safety loads (Hospital, Water, SCADA) and computed optimal Tier-3 curtailment under supply limits.",
-    duration_ms: 0.64,
-  },
-  {
-    stage_number: 4,
-    stage_name: "Multi-Strategy Candidate Generation",
-    algorithm_used:
-      "Dijkstra Shortest-Impedance + Kruskal MST + BESS Dispatch Synthesis",
-    summary:
-      "Synthesized K=5 candidate restoration maneuvers combining tie-switch closures, BESS injection, and selective load shedding.",
-    duration_ms: 1.12,
-  },
-  {
-    stage_number: 5,
-    stage_name: "True Post-Action Newton-Raphson AC Power-Flow Validation",
-    algorithm_used:
-      "pandapower Nonlinear AC Load Flow Solver (Clone + Apply + Solve)",
-    summary:
-      "Evaluated every candidate plan under full nonlinear AC power flow, checking bus voltages [0.92, 1.08] pu and branch thermal limits.",
-    duration_ms: 18.4,
-  },
-  {
-    stage_number: 6,
-    stage_name: "Multi-Objective Scoring & Feasibility Ranking",
-    algorithm_used:
-      "Lexicographic Feasibility Filter + Weighted Objective J(c)",
-    summary:
-      "Rejected physically infeasible candidates and ranked feasible maneuvers by critical load restored, total load, losses, and switching cost.",
-    duration_ms: 0.31,
-  },
-  {
-    stage_number: 7,
-    stage_name: "Optimal Restoration Plan Selection & State Commit",
-    algorithm_used: "Transactional Session State Updater",
-    summary:
-      "Selected top-scoring AC-feasible candidate restoring 100% of Tier-1 critical infrastructure with zero thermal or voltage violations.",
-    duration_ms: 0.25,
-  },
-  {
-    stage_number: 8,
-    stage_name: "Explainable Step-by-Step Trace Serialization",
-    algorithm_used: "Unified AlgorithmTrace & 6-Subtrace Bundler",
-    summary:
-      "Generated complete audit trail linking graph frontier states, DP allocations, and AC power-flow verification.",
-    duration_ms: 0.22,
-  },
-];
-
 export default function CaperInspectorPage() {
   const {
     session,
@@ -102,7 +30,7 @@ export default function CaperInspectorPage() {
     runCaper();
   }, [runCaper]);
 
-  const stages = caperResult?.stages || DEFAULT_STAGES;
+  const stages = caperResult?.stages || [];
   const candidates = caperResult?.candidates || [];
   const selectedCand = caperResult?.selected_candidate;
 
@@ -130,7 +58,7 @@ export default function CaperInspectorPage() {
           <button
             onClick={async () => {
               await applyAction("INJECT_FAULT", "LINE-02-03");
-              await applyAction("INJECT_FAULT", "LINE-02-04");
+              await applyAction("INJECT_FAULT", "LINE-03-04");
               await runCaper();
             }}
             disabled={loading}
@@ -147,7 +75,9 @@ export default function CaperInspectorPage() {
           </button>
           <button
             onClick={() => applyRestorationPlan("CAPER")}
-            disabled={loading}
+            disabled={
+              loading || !selectedCand?.feasible || !selectedCand?.ac_validated
+            }
             className="rounded-lg bg-blue-800 hover:bg-blue-800 px-4 py-2 font-sans text-xs font-bold text-white transition"
           >
             Commit Selected Plan to City
@@ -203,7 +133,7 @@ export default function CaperInspectorPage() {
                 </p>
               </div>
               <span className="rounded bg-teal-50 px-2.5 py-1 font-sans text-xs text-teal-700 border border-teal-200">
-                {candidates.length || 5} Candidates Evaluated
+                {candidates.length} Candidates Evaluated
               </span>
             </div>
 
@@ -214,8 +144,8 @@ export default function CaperInspectorPage() {
                     <th className="py-2 px-2">Candidate ID</th>
                     <th className="py-2 px-2">Strategy Description</th>
                     <th className="py-2 px-2">AC Status</th>
-                    <th className="py-2 px-2">Crit Load</th>
-                    <th className="py-2 px-2">Total Load</th>
+                    <th className="py-2 px-2">Attempted Critical</th>
+                    <th className="py-2 px-2">Attempted Total</th>
                     <th className="py-2 px-2">Min V (pu)</th>
                     <th className="py-2 px-2">Max Load</th>
                     <th className="py-2 px-2">Score J(c)</th>

@@ -15,10 +15,10 @@ import {
 const DEMO_STEPS = [
   {
     minute: "Minute 0:00 – 1:00",
-    title: "1. 3D City Command & Hospital Feeder Fault Injection",
-    route: "/simulation",
+    title: "1. Restore: Hospital Feeder Fault Injection",
+    route: "/restore",
     talking_points: [
-      "Select the 12-bus training feeder and show the city overview. Use Present for a clean visual, then Escape to return to the controls.",
+      "Select the 12-bus training feeder and show the city overview. Use the 2D view; optionally switch to 3D when the browser supports graphics.",
       "Open the Electrical inspector tab and trip LINE-02-03. Inspect the hospital and the change in critical load served.",
       "Switch the 3D camera preset to 'Hospital' to inspect the de-energized Tier-1 facility.",
     ],
@@ -46,10 +46,10 @@ const DEMO_STEPS = [
   },
   {
     minute: "Minute 3:30 – 4:30",
-    title: "4. Campaign Missions (01–07) & Human-vs-AI Dispatcher Arena",
-    route: "/challenge",
+    title: "4. GRID COMMAND: Play, repair and compare",
+    route: "/grid-command",
     talking_points: [
-      "Open the Human-vs-AI Arena (or Mission 07 on the IEEE 33-Bus benchmark) and compare human switching decisions against CAPER, MILP-Reference, AC-Greedy, Graph-Greedy, and Priority-Greedy.",
+      "Open Grid Command, start Hospital Blackout, select the faulted feeder and repair it. Finish the level, then compare the outcome against CAPER from the same initial conditions.",
     ],
   },
   {
@@ -82,10 +82,10 @@ export default function FacultyDemoGuidePage() {
           </p>
         </div>
         <Link
-          href="/simulation"
+          href="/restore"
           className="flex items-center gap-2 rounded-xl bg-blue-800 hover:bg-blue-800 px-5 py-3 font-sans text-xs font-bold text-white transition"
         >
-          <Play className="h-4 w-4" /> Start Step 1 in 3D City Command
+          <Play className="h-4 w-4" /> Start the restoration scenario
         </Link>
       </div>
 

@@ -12,15 +12,15 @@ const CYBER_VECTORS = [
     target: "LINE-02-03",
     severity: "CRITICAL",
     description:
-      "Injects a forged multicast GOOSE frame to open the primary hospital feeder breaker without physical overcurrent.",
+      "Models the physical consequence of a forged GOOSE trip by opening the primary hospital feeder breaker without physical overcurrent.",
   },
   {
     id: "FDIA_STATE_ESTIMATION",
     name: "False Data Injection Attack (FDIA) on SCADA Voltage",
-    target: "LINE-02-04",
+    target: "LINE-03-04",
     severity: "HIGH",
     description:
-      "Corrupts RTU voltage & reactive power telemetry along the Water Treatment corridor while tripping the underlying line.",
+      "Trips the water-feeder branch in this local exercise. Use the detector sandbox below for actual false-data analysis.",
   },
   {
     id: "COORDINATED_CASCADE",
@@ -28,34 +28,68 @@ const CYBER_VECTORS = [
     target: "MULTI",
     severity: "CRITICAL",
     description:
-      "Simultaneously trips LINE-02-03, LINE-02-04, and LINE-06-10 while derating upstream substation capacity to 6.8 MW.",
+      "Simultaneously trips LINE-02-03, LINE-03-04, and LINE-08-10 while derating upstream substation capacity to 6.8 MW.",
   },
 ];
 
 export default function CyberLabPage() {
-  const { session, applyAction, applyRestorationPlan, resetSession } =
-    useSimulationStore();
+  const {
+    session,
+    applyAction,
+    applyRestorationPlan,
+    resetSession,
+    loading,
+    error,
+  } = useSimulationStore();
   useEffect(() => {
     if (session.network_id !== "TRAINING_FEEDER")
       resetSession("TRAINING_FEEDER", null, null);
   }, [session.network_id, resetSession]);
   const [idsAlertLog, setIdsAlertLog] = useState<string[]>([
-    "[IDS-NOMINAL] Chi-Square state estimation residual ||z - h(x)||_2 within 99% confidence bound.",
-    "[AEGIS-AGENT] Standing by for cyber-physical anomaly detection and autonomous CAPER isolation.",
+    "Training feeder exercise ready. No detector has run yet.",
   ]);
+  const [analysis, setAnalysis] = useState<any>(null),
+    [analysisBusy, setAnalysisBusy] = useState(false),
+    [analysisError, setAnalysisError] = useState("");
+  const [scenario, setScenario] = useState("SCN-001");
+  async function analyze() {
+    setAnalysisBusy(true);
+    setAnalysisError("");
+    try {
+      const response = await fetch("/api/cyber/simulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scenario_id: scenario,
+          baseline_network: "IEEE_30",
+          seed: 42,
+          apply_physical_consequence: true,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw Error(data.detail || "Detection pipeline failed");
+      setAnalysis(data);
+    } catch (e) {
+      setAnalysisError(String(e));
+    } finally {
+      setAnalysisBusy(false);
+    }
+  }
 
   const launchVector = async (vec: (typeof CYBER_VECTORS)[0]) => {
     if (vec.target === "MULTI") {
       await applyAction("INJECT_FAULT", "LINE-02-03");
-      await applyAction("INJECT_FAULT", "LINE-02-04");
-      await applyAction("INJECT_FAULT", "LINE-06-10");
+      await applyAction("INJECT_FAULT", "LINE-03-04");
+      await applyAction("INJECT_FAULT", "LINE-08-10");
       await applyAction("SET_SOURCE_CAPACITY", "BUS-01", 6.8);
     } else {
       await applyAction("INJECT_FAULT", vec.target);
     }
+    const result = useSimulationStore.getState();
     setIdsAlertLog((prev) => [
-      `[ALERT • ${vec.id}] Detected uncommanded topology/telemetry residual spike on ${vec.target}!`,
-      `[RESIDUAL CHECK] Kirchhoff nodal mismatch + GOOSE sequence number anomaly flagged as CYBER_SABOTAGE.`,
+      result.error
+        ? `Action failed: ${result.error}`
+        : `Synthetic ${vec.id}: ${result.session.kpis.active_faults_count} faults; ${result.session.power_flow.violations.length} AC constraint violations.`,
       ...prev,
     ]);
   };
@@ -71,26 +105,31 @@ export default function CyberLabPage() {
             Cyber Event Analysis
           </h1>
           <p className="text-xs text-slate-600 mt-1 max-w-3xl">
-            Simulate adversarial cyber-physical attacks on substation breakers
-            and SCADA telemetry, inspect physics-informed residual detection,
-            and trigger autonomous CAPER self-healing.
+            Compare simulated breaker outages with the backend cyber-detection
+            pipeline. All scenarios are synthetic; electrical consequences are
+            computed.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
+            disabled={loading}
             onClick={async () => {
               await applyRestorationPlan("CAPER");
+              const result = useSimulationStore.getState();
               setIdsAlertLog((prev) => [
-                "[AEGIS + CAPER] Isolated compromised breakers, closed tie-switches, and restored 100% critical load.",
+                result.error
+                  ? `Restoration failed: ${result.error}`
+                  : `CAPER applied: ${result.session.kpis.critical_load_restored_pct}% attempted critical supply; ${result.session.power_flow.violations.length} constraint violations.`,
                 ...prev,
               ]);
             }}
             className="rounded-lg bg-blue-800 hover:bg-blue-800 px-4 py-2 font-sans text-xs font-bold text-white transition"
           >
-            Execute Autonomous Aegis + CAPER Defense
+            Apply CAPER to the training feeder
           </button>
           <button
+            disabled={loading}
             onClick={() => resetSession("TRAINING_FEEDER", null, null)}
             className="rounded-lg bg-slate-100 hover:bg-slate-100 px-3.5 py-2 font-sans text-xs text-slate-700 transition"
           >
@@ -99,6 +138,7 @@ export default function CyberLabPage() {
         </div>
       </div>
 
+      {error && <p role="alert">{error}</p>}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         <div className="lg:col-span-4 space-y-4 presentation-hide">
           {/* Attack Vectors */}
@@ -119,6 +159,7 @@ export default function CyberLabPage() {
                 </summary>
                 <p className="text-xs text-slate-500">{v.description}</p>
                 <button
+                  disabled={loading}
                   onClick={() => launchVector(v)}
                   className="w-full rounded bg-red-50 hover:bg-red-50 border border-red-200 py-1.5 font-sans text-xs font-bold text-red-700 transition"
                 >
@@ -131,8 +172,7 @@ export default function CyberLabPage() {
           {/* Physics-Informed IDS Console */}
           <div className="scada-panel rounded-xl p-4 space-y-2">
             <h3 className="font-sans text-xs font-bold uppercase text-blue-700 flex items-center gap-2">
-              <Terminal className="h-4 w-4" /> Event timeline · synthetic
-              detections
+              <Terminal className="h-4 w-4" /> Training feeder action timeline
             </h3>
             <div className="rounded-lg bg-slate-50 p-3 border border-slate-200 font-sans text-xs space-y-1.5 max-h-52 overflow-y-auto">
               {idsAlertLog.map((line, i) => (
@@ -157,6 +197,75 @@ export default function CyberLabPage() {
           <CityCanvas3D heightClass="h-[520px]" />
         </div>
       </div>
+      <section className="scada-panel rounded-xl p-5 space-y-4">
+        <h2 className="text-lg font-semibold">
+          Cyber detection and electrical evidence
+        </h2>
+        <p className="text-sm text-slate-600">
+          Runs the existing detection service on a separate IEEE 30-bus sandbox:
+          synthetic event generation, classification, BFS impact, AC analysis
+          and incident correlation. This sandbox does not replace the
+          training-feeder state above.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <label>
+            Scenario{" "}
+            <select
+              aria-label="Detection scenario"
+              className="quiet-button"
+              value={scenario}
+              onChange={(e) => setScenario(e.target.value)}
+            >
+              {[
+                ["SCN-001", "Unauthorized breaker command"],
+                ["SCN-002", "False telemetry"],
+                ["SCN-003", "Configuration tampering"],
+                ["SCN-004", "Reconnaissance"],
+                ["SCN-005", "Coordinated campaign"],
+              ].map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="primary-button"
+            disabled={analysisBusy}
+            onClick={analyze}
+          >
+            {analysisBusy ? "Analyzing…" : "Run detection pipeline"}
+          </button>
+        </div>
+        {analysisError && <p role="alert">{analysisError}</p>}
+        {analysis && (
+          <div>
+            <p className="text-sm">
+              Computed sandbox result · {analysis.simulation_id} · seed{" "}
+              {analysis.seed}
+            </p>
+            <details>
+              <summary>
+                Inspect classification, physical impact and incident evidence
+              </summary>
+              <pre className="text-xs overflow-auto max-h-96">
+                {JSON.stringify(
+                  {
+                    event: analysis.event,
+                    asset: analysis.matched_asset,
+                    physical: analysis.state_comparison,
+                    consistency: analysis.cyber_physics_consistency,
+                    priority: analysis.priority_ranking,
+                    timeline: analysis.execution_timeline,
+                  },
+                  null,
+                  2,
+                )}
+              </pre>
+            </details>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

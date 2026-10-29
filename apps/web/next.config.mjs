@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  distDir: process.env.GRIDSEC_DEV_DIST || ".next",
+  outputFileTracingRoot: new URL("../../", import.meta.url).pathname,
   transpilePackages: ["three", "@react-three/fiber", "@react-three/drei"],
   async rewrites() {
     return [

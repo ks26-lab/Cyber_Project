@@ -64,7 +64,8 @@ def test_02_battery_model_discrete_time_energy_physics():
 def test_03_all_13_dsa_algorithms_produce_valid_traces():
     net_data = power_flow_service.get_network_topology("TRAINING_FEEDER")
     algo_ids = [item["id"] for item in GridDSACatalog.CATALOG_METADATA]
-    assert len(algo_ids) == 13
+    assert len(algo_ids) == 14
+    assert "BIPARTITE_MATCHING" in algo_ids
     for algo_id in algo_ids:
         trace = GridDSACatalog.run_algorithm(
             algorithm_id=algo_id,
@@ -80,9 +81,9 @@ def test_03_all_13_dsa_algorithms_produce_valid_traces():
 
 
 def test_04_caper_and_four_baselines_on_faulted_constrained_feeder():
-    faults = ["LINE-02-03", "LINE-02-04"]
+    faults = ["LINE-02-03", "LINE-03-04"]
     overrides = {
-        "lines": {"LINE-02-03": {"status": "OUT_OF_SERVICE"}, "LINE-02-04": {"status": "OUT_OF_SERVICE"}},
+        "lines": {"LINE-02-03": {"status": "OUT_OF_SERVICE"}, "LINE-03-04": {"status": "OUT_OF_SERVICE"}},
         "switches": {},
         "batteries": {},
         "load_curtailment": {},
@@ -164,3 +165,16 @@ def test_06_gridzero_fastapi_endpoints():
     assert r_csv.status_code == 200
     assert "critical_load_restored_pct" in r_csv.text
 
+
+
+def test_named_national_session_action_preserves_network():
+    from app.simulation.session_manager import SimulationSessionManager
+    manager = SimulationSessionManager()
+    national = manager.reset_session(session_id="NATIONAL-REGRESSION", network_id="INDIA_GRID_59")
+    line_id = national.power_flow.lines[0].line_id
+    changed = manager.apply_action(session_id=national.session_id, action_type="INJECT_FAULT", target_id=line_id)
+    assert changed.network_id == "INDIA_GRID_59"
+    assert changed.revision > national.revision
+    assert any(f.asset_id == line_id and not f.cleared for f in changed.active_faults)
+    assert next(l for l in changed.power_flow.lines if l.line_id == line_id).status == "OUT_OF_SERVICE"
+    assert manager.get_or_create_session().network_id == "TRAINING_FEEDER"

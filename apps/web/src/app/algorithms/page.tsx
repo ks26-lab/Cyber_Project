@@ -18,6 +18,13 @@ import {
 
 const ALGORITHMS_LIST = [
   {
+    id: "BIPARTITE_MATCHING",
+    name: "Reserve Source–Critical Load Bipartite Matching",
+    category: "MATCHING",
+    complexity: "O(S(V + E) + S E_b)",
+    role: "One-to-one reserve assignments to reachable critical loads; verify AC before dispatch",
+  },
+  {
     id: "BFS",
     name: "Breadth-First Search (O(1) Deque FIFO)",
     category: "GRAPH_TRAVERSAL",
@@ -68,9 +75,9 @@ const ALGORITHMS_LIST = [
   },
   {
     id: "MIN_COST_MAX_FLOW",
-    name: "Successive Shortest-Path Min-Cost Max-Flow",
+    name: "Edmonds-Karp Max-Flow / Min-Cut",
     category: "OPTIMIZATION_FLOW",
-    complexity: "O(F · E log V) time / O(V + E) space",
+    complexity: "O(V · E²) time / O(V + E) space",
     role: "Multi-Source (Grid + BESS) Capacity-Constrained Power Routing",
   },
   {
@@ -116,10 +123,13 @@ export default function AlgorithmsLabPage() {
   const [trace, setTrace] = useState<any | null>(null);
   const [stepIdx, setStepIdx] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState("");
 
   const runAlgorithm = async (algoId: string) => {
     setSelectedAlgo(algoId);
     setLoading(true);
+    setTrace(null);
+    setError("");
     try {
       const res = await fetch("/api/gridzero/algorithms/run", {
         method: "POST",
@@ -127,9 +137,15 @@ export default function AlgorithmsLabPage() {
         body: JSON.stringify({
           algorithm_id: algoId,
           network_id: session.network_id,
-          parameters: { capacity_mw: 6.8, query_prefix: "BUS-0" },
+          parameters: {
+            capacity_mw:
+              session.source_capacity_limit_mw ??
+              session.kpis.total_generation_mw,
+            query_prefix: "BUS-0",
+          },
         }),
       });
+      if (!res.ok) throw Error("Algorithm service returned " + res.status);
       if (res.ok) {
         const data = await res.json();
         setTrace(data.trace);
@@ -143,15 +159,19 @@ export default function AlgorithmsLabPage() {
           );
         }
       }
-    } catch {
-      // Fallback handled gracefully
+    } catch (e) {
+      setError(String(e));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    runAlgorithm("BFS");
+    const requested =
+      new URLSearchParams(window.location.search).get("algo") || "BFS";
+    runAlgorithm(
+      ALGORITHMS_LIST.some((a) => a.id === requested) ? requested : "BFS",
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.network_id]);
 
@@ -183,12 +203,12 @@ export default function AlgorithmsLabPage() {
             EXPERIENCE C • EXPLAINABLE DATA STRUCTURES & ALGORITHMS LABORATORY
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900">
-            13-Algorithm Interactive Graph, DP & Telemetry Trace Inspector
+            14-Algorithm Interactive Graph, DP & Telemetry Trace Inspector
           </h1>
           <p className="text-xs text-slate-600 mt-1">
             Execute authentic graph traversals, shortest-impedance routing,
-            bridge detection, spanning trees, 0/1 Knapsack DP, and Min-Cost
-            Max-Flow on the live electrical network with step-by-step
+            bridge detection, spanning trees, 0/1 Knapsack DP, and Max-Flow /
+            Min-Cut on the live electrical network with step-by-step
             data-structure state replay.
           </p>
         </div>
@@ -200,7 +220,8 @@ export default function AlgorithmsLabPage() {
         </Link>
       </div>
 
-      {/* 13 Algorithm Selector Pills */}
+      {error && <p role="alert">{error}</p>}
+      {/* Algorithm selector */}
       <div className="scada-panel rounded-xl p-4 flex flex-wrap gap-5 items-center">
         <label htmlFor="algorithm" className="text-sm font-medium">
           Algorithm
@@ -237,10 +258,10 @@ export default function AlgorithmsLabPage() {
                   {trace?.algorithm_name || selectedAlgo}
                 </h2>
                 <p className="font-sans text-xs text-blue-700">
-                  Time: {trace?.theoretical_time_complexity || "O(V + E)"} •
-                  Space: {trace?.theoretical_space_complexity || "O(V)"} • Ops:{" "}
-                  {trace?.empirical_operations || 18} (
-                  {trace?.execution_time_ms || 0.25} ms)
+                  Time: {trace?.theoretical_time_complexity || "—"} • Space:{" "}
+                  {trace?.theoretical_space_complexity || "—"} • Ops:{" "}
+                  {trace?.empirical_operations ?? "—"} (
+                  {trace?.execution_time_ms ?? "—"} ms)
                 </p>
               </div>
 
@@ -261,8 +282,7 @@ export default function AlgorithmsLabPage() {
                   <SkipBack className="h-3 w-3" /> Prev
                 </button>
                 <span className="rounded bg-blue-50 border border-blue-200 px-2.5 py-1 text-blue-700 font-bold">
-                  Step {steps.length > 0 ? stepIdx + 1 : 1} /{" "}
-                  {Math.max(1, steps.length)}
+                  Step {steps.length > 0 ? stepIdx + 1 : 0} / {steps.length}
                 </span>
                 <button
                   onClick={() => handleStepChange(stepIdx + 1)}
@@ -307,14 +327,7 @@ export default function AlgorithmsLabPage() {
                 Pseudocode Trace:
               </div>
               <div className="rounded-lg bg-slate-50 p-3 border border-slate-200 font-sans text-xs space-y-1">
-                {(
-                  trace?.pseudocode || [
-                    "1. function ExecuteGridAlgorithm(G, source):",
-                    "2.   initialize frontier data structure (Deque / Heap / DSU / DP)",
-                    "3.   step through electrical buses and branch impedances",
-                    "4.   emit verified topological or optimization output",
-                  ]
-                ).map((line: string, i: number) => {
+                {(trace?.pseudocode || []).map((line: string, i: number) => {
                   const isLineActive = currentStep?.pseudocode_line === i + 1;
                   return (
                     <div

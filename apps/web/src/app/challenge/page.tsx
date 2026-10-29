@@ -10,102 +10,28 @@ export default function HumanVsAlgorithmChallengePage() {
   const { session, resetSession, applyRestorationPlan } = useSimulationStore();
   const [challengeData, setChallengeData] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const evaluateHeadToHead = async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/gridzero/challenge/compare", {
         method: "POST",
       });
+      if (!res.ok) throw Error("Comparison failed (" + res.status + ")");
       if (res.ok) {
         const data = await res.json();
         setChallengeData(data);
       }
-    } catch {
-      // Fallback handled below
+    } catch (e) {
+      setError(String(e));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    evaluateHeadToHead();
-  }, [session.revision]);
-
-  const leaderboard = challengeData?.leaderboard || [
-    {
-      rank: 1,
-      participant: "CAPER",
-      label: "CAPER (8-Stage Hybrid Graph + DP + AC NR)",
-      ac_feasible: true,
-      critical_load_restored_pct: 100.0,
-      total_load_restored_pct: 91.5,
-      min_voltage_pu: 0.961,
-      max_branch_loading_pct: 64.2,
-      switching_count: 2,
-      resilience_score: 94.8,
-    },
-    {
-      rank: 2,
-      participant: "HUMAN_OPERATOR",
-      label: "Human Operator (Live Session)",
-      ac_feasible: session.kpis.active_violations_count === 0,
-      critical_load_restored_pct: session.kpis.critical_load_restored_pct,
-      total_load_restored_pct: session.kpis.total_load_restored_pct,
-      min_voltage_pu: session.kpis.min_voltage_pu,
-      max_branch_loading_pct: session.kpis.max_line_loading_pct,
-      switching_count: session.action_log.length - 1,
-      resilience_score: session.kpis.city_survival_index,
-    },
-    {
-      rank: 3,
-      participant: "MILP_REFERENCE",
-      label: "MILP-Reference (SciPy HiGHS + AC Check)",
-      ac_feasible: true,
-      critical_load_restored_pct: 98.5,
-      total_load_restored_pct: 88.2,
-      min_voltage_pu: 0.954,
-      max_branch_loading_pct: 69.8,
-      switching_count: 3,
-      resilience_score: 90.2,
-    },
-    {
-      rank: 4,
-      participant: "AC_GREEDY",
-      label: "AC-Greedy (Myopic Single-Step)",
-      ac_feasible: true,
-      critical_load_restored_pct: 93.0,
-      total_load_restored_pct: 81.4,
-      min_voltage_pu: 0.945,
-      max_branch_loading_pct: 76.1,
-      switching_count: 2,
-      resilience_score: 83.5,
-    },
-    {
-      rank: 5,
-      participant: "GRAPH_GREEDY",
-      label: "Graph-Greedy (Shortest-Hop Topology Only)",
-      ac_feasible: false,
-      critical_load_restored_pct: 89.0,
-      total_load_restored_pct: 84.0,
-      min_voltage_pu: 0.914,
-      max_branch_loading_pct: 98.2,
-      switching_count: 1,
-      resilience_score: 68.4,
-    },
-    {
-      rank: 6,
-      participant: "PRIORITY_GREEDY",
-      label: "Priority-Greedy (Load Shedding Only)",
-      ac_feasible: true,
-      critical_load_restored_pct: 75.5,
-      total_load_restored_pct: 70.2,
-      min_voltage_pu: 0.938,
-      max_branch_loading_pct: 81.0,
-      switching_count: 1,
-      resilience_score: 64.1,
-    },
-  ];
+  const leaderboard = challengeData?.leaderboard || [];
 
   return (
     <div className="flex-1 scada-grid-bg p-5 lg:p-10 space-y-5">
@@ -144,11 +70,18 @@ export default function HumanVsAlgorithmChallengePage() {
             onClick={() => applyRestorationPlan("CAPER")}
             className="rounded-lg bg-blue-800 hover:bg-blue-800 px-3.5 py-2 font-sans text-xs font-bold text-white transition"
           >
-            Show CAPER Optimal Move
+            Apply CAPER Restoration Plan
           </button>
         </div>
       </div>
 
+      {error && <p role="alert">{error}</p>}
+      {!leaderboard.length && (
+        <p role="status" className="text-slate-500">
+          Load the crisis scenario, make your decisions, then score your
+          solution to calculate a fair comparison.
+        </p>
+      )}
       {/* Head-to-Head Leaderboard Table */}
       <div className="scada-panel rounded-xl p-5">
         <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-3">
@@ -169,8 +102,8 @@ export default function HumanVsAlgorithmChallengePage() {
                 <th className="py-2 px-2">Rank</th>
                 <th className="py-2 px-2">Participant</th>
                 <th className="py-2 px-2">AC Physics</th>
-                <th className="py-2 px-2">Crit Load (%)</th>
-                <th className="py-2 px-2">Total Load (%)</th>
+                <th className="py-2 px-2">Attempted Critical (%)</th>
+                <th className="py-2 px-2">Attempted Total (%)</th>
                 <th className="py-2 px-2">Min V (pu)</th>
                 <th className="py-2 px-2">Peak Load (%)</th>
                 <th className="py-2 px-2">Switches</th>

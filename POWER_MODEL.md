@@ -24,10 +24,10 @@ $$Q_i(V, \theta) = \sum_{j=1}^{N} |V_i||V_j|\left(G_{ij}\sin(\theta_i - \theta_j
 
 | Network ID | Voltage Level | Buses | Branches / Tie Switches | BESS Units | Description |
 |---|---|---|---|---|---|
-| `TRAINING_FEEDER` | 33 / 11 kV | 12 | 11 radial + 4 NO tie switches | 2 (`BESS-CITY-1`, `BESS-HOSP-1`) | Smart City distribution feeder with Hospital, Water, SCADA, University, Residential, Industrial & Solar PV |
+| `TRAINING_FEEDER` | 33 / 11 kV | 12 | 10 radial lines + 1 transformer + 4 NO tie switches | 2 (`BESS-CITY-1`, `BESS-HOSP-1`) | Smart City distribution feeder with Hospital, Water, SCADA, University, Residential, Industrial & Solar PV |
 | `IEEE_33_DISTRIBUTION` | 12.66 kV | 33 | 32 sectionalizing + 5 NO tie switches | 2 (`BESS-33-1`, `BESS-33-2`) | Authentic Baran & Wu (1989) 33-bus radial distribution benchmark (`pandapower.networks.case33bw()`) |
 | `IEEE_30` | 132 / 33 kV | 30 | 41 transmission branches | 0 | Standard IEEE 30-Bus transmission system with 6 generators/synchronous condensers |
-| `INDIA_GRID_59` | 765 / 400 / 220 kV | 59 | 89 bulk inter-regional corridors | 0 | Indian National Grid 59-substation reference model across 5 RLDC regions |
+| `INDIA_GRID_59` | 765 / 400 / 220 kV | 59 | 54 modeled inter-regional corridors | 0 | Indian National Grid 59-substation reference model across 5 RLDC regions |
 
 ---
 
@@ -41,3 +41,12 @@ subject to:
 - $-P_{\text{chg},\max} \le P_{\text{bess}}(t) \le P_{\text{dis},\max}$
 - $\text{SOC}_{\min} \cdot E_{\text{cap}} \le E_{\text{bess}}(t + \Delta t) \le \text{SOC}_{\max} \cdot E_{\text{cap}}$
 
+
+
+## Product interpretation and elapsed time
+
+Each ordinary operator action advances the authoritative local clock by five minutes. Active batteries integrate energy for that elapsed interval on every action. Explicit time-advance uses its supplied duration; game storm trips also advance the backend clock. A dispatch is a power setpoint in kW, not a fixed fifteen-minute energy deduction.
+
+Displayed served demand is attempted model allocation until the corresponding state meets the reported AC feasibility conditions. Graph-flow MW capacities are simplified planning limits and do not solve nonlinear voltage/phase equations. Reserve matching uses discrete one-source/one-load compatibility, not shared continuous dispatch. The game models its existing solar source and BESS, not an invented diesel fleet. Credit costs, turn budgets and scheduled storm arrivals are educational rules rather than physical weather/protection simulations.
+
+The national dataset bundles 59 modeled nodes and 54 corridor references, with engineering assumptions for electrical parameters. Census-derived geographic paths are grouped by state and may differ from current administrative boundaries. It is not a live POWERGRID operational topology. No national asset is asserted to be physically connected to the separate local training feeder.

@@ -1,115 +1,239 @@
+"use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Network, ShieldCheck, FlaskConical } from "lucide-react";
-import { IndiaMap } from "@/components/maps/IndiaMap";
-export default function HomePage() {
+import { IndiaMap, indiaNodes, indiaStates } from "@/components/maps/IndiaMap";
+import { nationalMetrics, useIndiaGridStore } from "@/store/useIndiaGridStore";
+export default function Explore() {
+  const model = useIndiaGridStore(),
+    [query, setQuery] = useState(""),
+    [layer, setLayer] = useState("Connectivity");
+  const { ensure } = model;
+  useEffect(() => {
+    void ensure();
+  }, [ensure]);
+  const node = indiaNodes.find((n) => n.id === model.selectedNode),
+    scope = nationalMetrics(model.session, {
+      node: model.selectedNode,
+      state: model.selectedNode ? "" : model.selectedState,
+    });
+  const stateMatches = indiaStates.filter((s) =>
+    s.toLowerCase().includes(query.toLowerCase()),
+  );
+  const title = node?.name || model.selectedState;
   return (
-    <div className="px-6 lg:px-12 pb-16">
-      <section className="hero-layout">
-        <div>
-          <div className="eyebrow">Cyber-physical grid resilience</div>
-          <h1 className="hero-title">
-            GRIDSEC <span className="text-blue-700">// ZERO</span>
-          </h1>
-          <h2 className="text-2xl font-medium mb-5">
-            Keep the critical connected.
-          </h2>
-          <p className="hero-copy">
-            Understand how power networks fail. Explore how explainable
-            algorithms restore the infrastructure a city depends on.
-          </p>
-          <div className="flex flex-wrap gap-3 mt-8">
-            <Link className="primary-button" href="/simulation">
-              Explore Platform <ArrowUpRight size={16} />
-            </Link>
-            <Link className="secondary-button" href="/research">
-              View Research
-            </Link>
-          </div>
-          <div className="flex gap-10 mt-12 pt-6 border-t border-slate-200">
-            <div>
-              <strong className="text-2xl font-semibold">13</strong>
-              <p className="text-xs text-slate-500">Explainable algorithms</p>
-            </div>
-            <div>
-              <strong className="text-2xl font-semibold">4</strong>
-              <p className="text-xs text-slate-500">Reference networks</p>
-            </div>
-          </div>
+    <div className="journey">
+      <div className="journey-heading">
+        <span className="eyebrow">01 / Explore</span>
+        <h1>How connected is our power grid?</h1>
+      </div>
+      <div className="map-tools">
+        <label>
+          <span className="sr-only">Search substations</span>
+          <input
+            placeholder="Search a substation or state…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <label>
+          <span className="sr-only">Map layer</span>
+          <select value={layer} onChange={(e) => setLayer(e.target.value)}>
+            {[
+              "Connectivity",
+              "Regions",
+              "Voltage",
+              "Grid health",
+              "Incidents",
+            ].map((l) => (
+              <option key={l}>{l}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {query && (
+        <div className="search-results" aria-label="Search results">
+          {indiaNodes
+            .filter((n) =>
+              (n.name + " " + n.state + " " + n.region)
+                .toLowerCase()
+                .includes(query.toLowerCase()),
+            )
+            .slice(0, 5)
+            .map((n) => (
+              <button
+                className="quiet-button"
+                key={n.id}
+                onClick={() => {
+                  model.selectNode(n.id);
+                  setQuery("");
+                }}
+              >
+                {n.name} · {n.state}
+              </button>
+            ))}
+          {stateMatches.slice(0, 4).map((s) => (
+            <button
+              className="quiet-button"
+              key={s}
+              onClick={() => {
+                model.selectState(s);
+                setQuery("");
+              }}
+            >
+              {s} · State
+            </button>
+          ))}
+          {!stateMatches.length &&
+            !indiaNodes.some((n) =>
+              (n.name + " " + n.state)
+                .toLowerCase()
+                .includes(query.toLowerCase()),
+            ) && (
+              <p className="intel-note">
+                No matching modeled assets or states.
+              </p>
+            )}
         </div>
-        <Link href="/national-grid" aria-label="Explore the India grid map">
-          <IndiaMap preview />
-        </Link>
-      </section>
-      <section className="py-10 border-t border-slate-200 grid md:grid-cols-2 gap-12">
-        <div>
-          <div className="eyebrow">01 / The problem</div>
-          <h2 className="text-3xl font-semibold mt-4 max-w-md">
-            A single outage can reach far beyond the grid.
-          </h2>
-        </div>
-        <p className="text-slate-500 text-base self-center max-w-xl">
-          Hospitals, water systems and communication networks rely on continuous
-          power. GRIDSEC connects graph theory, electrical constraints and cyber
-          event analysis to study restoration decisions—and explain their
-          consequences.
+      )}
+      <IndiaMap
+        modelSession={model.session || undefined}
+        selected={model.selectedNode}
+        selectedState={model.selectedState}
+        onSelect={model.selectNode}
+        onStateSelect={model.selectState}
+        overlay={layer}
+      />
+      {model.loading && (
+        <p className="intel-note" role="status">
+          Solving the national reference model…
         </p>
-      </section>
-      <section className="module-grid">
-        {[
-          {
-            icon: Network,
-            title: "Explore the network",
-            text: "Inspect city facilities, trace feeder faults and validate restoration with AC power flow.",
-            href: "/simulation",
-            link: "Open Simulation",
-          },
-          {
-            icon: ShieldCheck,
-            title: "Explain every decision",
-            text: "Follow graph traversal, routing, critical-load allocation and the eight stages of CAPER.",
-            href: "/algorithms",
-            link: "Explore Algorithms",
-          },
-          {
-            icon: FlaskConical,
-            title: "Measure resilience",
-            text: "Compare restoration strategies across seeded contingencies and inspect reproducible results.",
-            href: "/research",
-            link: "View Research",
-          },
-        ].map((m) => (
-          <article className="module-card" key={m.href}>
-            <m.icon size={22} className="text-blue-700" />
-            <h3>{m.title}</h3>
-            <p>{m.text}</p>
-            <Link href={m.href}>{m.link} ↗</Link>
-          </article>
-        ))}
-      </section>
-      <section className="mt-12 grid md:grid-cols-3 gap-8 text-sm">
-        {[
-          [
-            "Cyber + resilience",
-            "Follow security events from breaker disruption to physical impact.",
-            "/cyber-lab",
-          ],
-          [
-            "India Grid",
-            "Explore real geographic boundaries and the 59-node reference topology.",
-            "/national-grid",
-          ],
-          [
-            "A guided demonstration",
-            "Walk through curated scenes, restoration and engineering evidence.",
-            "/demo",
-          ],
-        ].map(([t, d, h]) => (
-          <Link href={h} key={h} className="py-5 border-t border-slate-200">
-            <h3 className="font-semibold mb-2">{t} ↗</h3>
-            <p className="text-slate-500">{d}</p>
-          </Link>
-        ))}
-      </section>
+      )}
+      {model.error && (
+        <div className="intel-status intel-error" role="alert">
+          {model.error}{" "}
+          <button className="intel-small-button" onClick={() => model.ensure()}>
+            Retry model
+          </button>
+        </div>
+      )}
+      {title && (
+        <section className="intel-selection">
+          <div className="intel-selection-top">
+            <div>
+              <span className="intel-overline">
+                Selected {node ? "modeled asset" : "state"}
+              </span>
+              <h2>{title}</h2>
+              <p className="intel-note">
+                {node
+                  ? `${node.state} · ${node.voltage}`
+                  : `${scope.nodes.length} representative assets in this state`}
+              </p>
+            </div>
+            <Link className="secondary-button" href="/dashboard?scope=india">
+              Open selected grid dashboard ↗
+            </Link>
+          </div>
+          <div className="intel-inline-stats">
+            <span>
+              Simulated demand
+              <strong>
+                {model.session
+                  ? scope.demand.toFixed(1) + " MW"
+                  : "Awaiting solver"}
+              </strong>
+            </span>
+            <span>
+              Simulated generation
+              <strong>
+                {model.session
+                  ? scope.generation.toFixed(1) + " MW"
+                  : "Awaiting solver"}
+              </strong>
+            </span>
+            <span>
+              {model.session?.solver_provenance === "AC_SOLVED" &&
+              model.session.power_flow.power_balance.converged &&
+              !model.session.power_flow.violations.length
+                ? "Verified load supplied"
+                : "Attempted load allocation"}
+              <strong>
+                {model.session
+                  ? scope.served.toFixed(1) + " MW"
+                  : "Awaiting solver"}
+              </strong>
+            </span>
+          </div>
+          {!scope.nodes.length && (
+            <p className="intel-note">
+              This reference network has no modeled assets here; no regional
+              demand or generation estimate is inferred.
+            </p>
+          )}
+          <details className="contingency mt-5">
+            <summary>Inspect simulated contingencies</summary>
+            <p className="intel-note">
+              The national AC model is separate from the local restoration
+              feeder. These actions change only this model.
+            </p>
+            <button
+              className="quiet-button"
+              disabled={model.loading}
+              onClick={() => model.reset()}
+            >
+              {model.session ? "Reset national model" : "Solve national model"}
+            </button>
+            {scope.lines.slice(0, 10).map((l) => (
+              <div key={l.line_id}>
+                <span>
+                  {l.name} · {l.loading_percent.toFixed(1)}% loading{" "}
+                </span>
+                <button
+                  className="quiet-button"
+                  disabled={model.loading}
+                  onClick={() =>
+                    model.action(
+                      l.status === "OUT_OF_SERVICE"
+                        ? "CLEAR_FAULT"
+                        : "INJECT_FAULT",
+                      l.line_id,
+                    )
+                  }
+                >
+                  {l.status === "OUT_OF_SERVICE"
+                    ? "Repair and reclose"
+                    : "Simulate corridor trip"}
+                </button>
+              </div>
+            ))}
+            {model.session && (
+              <p>
+                {model.session.power_flow.power_balance.converged
+                  ? "AC converged"
+                  : "AC not converged"}{" "}
+                · {scope.violations} selected-area constraint violations ·{" "}
+                {scope.faults} simulated faults
+              </p>
+            )}
+          </details>
+        </section>
+      )}
+      <div className="journey-next">
+        <p>
+          Representative national network, not live telemetry. Continue with a
+          separate local distribution model.
+        </p>
+        <Link href="/restore" className="primary-button">
+          Explore a local outage →
+        </Link>
+      </div>
+      <p className="provenance">
+        State geometries: india-maps-data, grouped census district geometry;
+        administrative boundaries may differ today. Asset positions, routes and
+        capacities are representative modeling inputs, not verified operational
+        infrastructure.{" "}
+        <Link href="/national-grid">National model operations ↗</Link>
+      </p>
     </div>
   );
 }

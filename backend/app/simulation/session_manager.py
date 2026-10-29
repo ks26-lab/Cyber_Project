@@ -6,6 +6,9 @@ load curtailments, solved AC power flow, and 3D city building states across all 
 
 import copy
 import uuid
+import math
+from threading import RLock
+from functools import wraps
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Set
 from pydantic import BaseModel, Field
@@ -23,6 +26,18 @@ from app.power.power_flow_service import power_flow_service
 from app.dsa.algorithms_catalog import GridDSACatalog
 from app.restoration.caper import CAPEREngine
 from app.restoration.baselines import BaselineRestorationSuite
+
+
+class SessionActionError(ValueError):
+    """Invalid operator input; no state revision has been committed."""
+
+
+def synchronized(method):
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+    return wrapped
 
 
 class Building3DState(BaseModel):
@@ -71,19 +86,22 @@ class SimulationSessionManager:
         self._sessions: Dict[str, SimulationSessionState] = {}
         self._history: Dict[str, List[SimulationSessionState]] = {}
         self._default_session_id = "DEFAULT_CITY_SESSION"
+        self._lock = RLock()
 
+    @synchronized
     def get_or_create_session(
         self,
         session_id: Optional[str] = None,
-        network_id: str = "TRAINING_FEEDER",
+        network_id: Optional[str] = None,
         mission_id: Optional[str] = None,
         seed: int = 42,
     ) -> SimulationSessionState:
         sid = session_id or self._default_session_id
         if sid in self._sessions and (not network_id or self._sessions[sid].network_id == network_id):
             return self._sessions[sid]
-        return self.reset_session(session_id=sid, network_id=network_id, mission_id=mission_id, seed=seed)
+        return self.reset_session(session_id=sid, network_id=network_id or "TRAINING_FEEDER", mission_id=mission_id, seed=seed)
 
+    @synchronized
     def reset_session(
         self,
         session_id: Optional[str] = None,
@@ -386,6 +404,7 @@ class SimulationSessionManager:
             solver_provenance="AC_SOLVED" if HAS_PANDAPOWER else "APPROXIMATE_MODEL",
         )
 
+    @synchronized
     def apply_action(
         self,
         action: Optional[RestorationAction] = None,
@@ -415,6 +434,47 @@ class SimulationSessionManager:
         tid = action.target_id.strip()
         val = action.value
 
+        net_data = power_flow_service.get_network_topology(state.network_id)
+        lines = {l.line_id: l for l in net_data.get("lines", [])}
+        transformers = {t.transformer_id: t for t in net_data.get("transformers", [])}
+        branch_ids = set(lines) | set(transformers)
+        switch = next((sw for sw in switches if tid in (sw.switch_id, sw.line_id)), None)
+        load = next((ld for ld in net_data.get("loads", []) if tid in (ld.load_id, ld.bus_id)), None)
+        battery = next((bt for bt in batteries if tid in (bt.battery_id, bt.bus_id)), None)
+        supported = {"INJECT_FAULT", "TRIP_LINE", "FAULT_LINE", "ISOLATE_BRANCH", "CLEAR_FAULT", "RECLOSE_LINE", "RESTORE_BRANCH", "TOGGLE_SWITCH", "CLOSE_TIE_SWITCH", "CLOSE_SWITCH", "OPEN_SWITCH", "ISOLATE_FAULT", "SHED_LOAD", "SHED_NON_CRITICAL_LOAD", "CURTAIL_LOAD", "RESTORE_LOAD", "DISPATCH_BATTERY", "SET_BATTERY", "SET_SOURCE_CAPACITY", "SET_SOURCE_LIMIT", "ADVANCE_TIME", "REDISPATCH_GENERATOR"}
+        if atype not in supported:
+            raise SessionActionError(f"Unsupported action: {atype}")
+        if val is not None and not math.isfinite(float(val)):
+            raise SessionActionError("The action value must be finite.")
+        if atype in {"INJECT_FAULT", "TRIP_LINE", "FAULT_LINE", "ISOLATE_BRANCH", "RECLOSE_LINE", "RESTORE_BRANCH"} and tid not in branch_ids:
+            raise SessionActionError(f"Unknown branch {tid} in {state.network_id}.")
+        if atype == "CLEAR_FAULT" and tid not in branch_ids and not any(f.fault_id == tid for f in faults):
+            raise SessionActionError(f"Unknown fault or branch: {tid}")
+        if atype in {"TOGGLE_SWITCH", "CLOSE_TIE_SWITCH", "CLOSE_SWITCH", "OPEN_SWITCH", "ISOLATE_FAULT"}:
+            if switch is None or not switch.operable:
+                raise SessionActionError(f"Switch {tid} is unavailable.")
+            closing = atype in {"CLOSE_TIE_SWITCH", "CLOSE_SWITCH"} or (atype == "TOGGLE_SWITCH" and not switch.closed)
+            if closing and any(not f.cleared and f.asset_id == switch.line_id for f in faults):
+                raise SessionActionError("Repair the faulted branch before closing its switch.")
+        if atype in {"SHED_LOAD", "SHED_NON_CRITICAL_LOAD", "CURTAIL_LOAD", "RESTORE_LOAD"}:
+            if load is None:
+                raise SessionActionError(f"Unknown load: {tid}")
+            if val is not None and (val < 0 or val > load.P):
+                raise SessionActionError(f"Curtailment must be between 0 and {load.P} MW.")
+        if atype in {"DISPATCH_BATTERY", "SET_BATTERY"}:
+            if battery is None:
+                raise SessionActionError(f"Unknown battery: {tid}")
+            if val is not None and not -battery.max_charge_kw <= val <= battery.max_discharge_kw:
+                raise SessionActionError("Battery dispatch exceeds its kW rating.")
+        if atype == "ADVANCE_TIME" and val is not None and not 0 < val <= 24:
+            raise SessionActionError("Advance time must be greater than zero and no more than 24 hours.")
+        if atype in {"SET_SOURCE_CAPACITY", "SET_SOURCE_LIMIT"} and val is not None and val <= 0:
+            raise SessionActionError("Source capacity must be positive, or null to remove the experimental limit.")
+        if atype == "REDISPATCH_GENERATOR":
+            generator = next((g for g in net_data.get("generators", []) if g.generator_id == tid), None)
+            if generator is None or val is None or not generator.Pmin <= val <= generator.Pmax:
+                raise SessionActionError("Generator dispatch must lie within its Pmin/Pmax limits.")
+
         if atype in ("INJECT_FAULT", "TRIP_LINE", "FAULT_LINE", "ISOLATE_BRANCH"):
             faults.append(
                 FaultModel(
@@ -433,6 +493,7 @@ class SimulationSessionManager:
                     sw.closed = False
 
         elif atype in ("CLEAR_FAULT", "RECLOSE_LINE", "RESTORE_BRANCH"):
+            tid = next((f.asset_id for f in faults if f.fault_id == tid), tid)
             for f in faults:
                 if f.asset_id == tid or f.fault_id == tid:
                     f.cleared = True
@@ -478,7 +539,7 @@ class SimulationSessionManager:
             for batt in batteries:
                 if batt.battery_id == tid or batt.bus_id == tid:
                     req_kw = float(val) if val is not None else float(batt.max_discharge_kw * 0.8)
-                    batt.step_energy(req_kw, dt_hours=0.25)
+                    batt.current_dispatch_kw = req_kw
 
         elif atype in ("SET_SOURCE_CAPACITY", "SET_SOURCE_LIMIT"):
             source_cap = float(val) if (val is not None and float(val) > 0) else None
@@ -486,13 +547,18 @@ class SimulationSessionManager:
         elif atype == "ADVANCE_TIME":
             dt_h = float(val) if val is not None else 0.25
             sim_mins = state.sim_time_minutes + int(round(dt_h * 60))
-            for batt in batteries:
-                if abs(batt.current_dispatch_kw) > 1e-3:
-                    batt.step_energy(batt.current_dispatch_kw, dt_hours=dt_h)
+
 
         elif atype == "REDISPATCH_GENERATOR":
             if val is not None:
                 overrides[tid] = {"p_gen_mw": float(val), "status": "ONLINE"}
+
+        # Every operator turn consumes exactly its simulated elapsed time.
+        # A dispatch changes kW; energy is integrated once for all active storage.
+        elapsed_hours = (sim_mins - state.sim_time_minutes) / 60.0
+        for batt in batteries:
+            if abs(batt.current_dispatch_kw) > 1e-3 and elapsed_hours > 0:
+                batt.step_energy(batt.current_dispatch_kw, dt_hours=elapsed_hours)
 
         new_rev = state.revision + 1
         new_log = list(state.action_log) + [
@@ -526,6 +592,7 @@ class SimulationSessionManager:
         self._history.setdefault(sid, []).append(copy.deepcopy(new_state))
         return new_state
 
+    @synchronized
     def run_dsa_algorithm(
         self,
         algorithm_id: str,
@@ -535,6 +602,24 @@ class SimulationSessionManager:
         state = self.get_or_create_session(session_id)
         net_data = power_flow_service.get_network_topology(state.network_id)
         faulted = {f.asset_id for f in state.active_faults if not f.cleared}
+        net_data = copy.deepcopy(net_data)
+        for line in net_data.get("lines", []):
+            override = state.state_overrides.get(line.line_id, {})
+            if isinstance(override, dict) and "status" in override:
+                line.status = override["status"]
+        for sw in net_data.get("switches", []):
+            active = next((x for x in state.switches if x.switch_id == sw.switch_id), None)
+            if active:
+                sw.closed = active.closed
+        net_data["batteries"] = copy.deepcopy(state.batteries)
+        for gen in net_data.get("generators", []):
+            bus = next((b for b in net_data.get("buses", []) if b.bus_id == gen.bus_id), None)
+            if state.source_capacity_limit_mw is not None and bus and "SLACK" in str(bus.bus_type).upper():
+                gen.Pmax = min(gen.Pmax, state.source_capacity_limit_mw)
+        for ld in net_data.get("loads", []):
+            override = state.state_overrides.get(ld.load_id, {})
+            if isinstance(override, dict) and "p_load_mw" in override:
+                ld.P = override["p_load_mw"]
         trace = GridDSACatalog.run_algorithm(
             algorithm_id=algorithm_id,
             network_data=net_data,
@@ -544,6 +629,7 @@ class SimulationSessionManager:
         )
         return trace.model_dump()
 
+    @synchronized
     def run_caper(
         self,
         session_id: Optional[str] = None,
@@ -560,6 +646,7 @@ class SimulationSessionManager:
         )
         return res.model_dump()
 
+    @synchronized
     def compare_restoration_algorithms(
         self,
         session_id: Optional[str] = None,
@@ -589,6 +676,7 @@ class SimulationSessionManager:
             "comparison_table": comp["comparison_table"],
         }
 
+    @synchronized
     def apply_restoration_plan(
         self,
         actions: Optional[List[RestorationAction]] = None,
@@ -610,6 +698,8 @@ class SimulationSessionManager:
                     base_overrides=state.state_overrides,
                 )
                 selected_cand = caper_res.selected_candidate
+                if not selected_cand.feasible or not selected_cand.ac_validated:
+                    raise SessionActionError("CAPER found no AC-feasible plan; inspect its rejected candidates.")
                 actions = selected_cand.actions
             else:
                 b_map = BaselineRestorationSuite.run_all_baselines(
@@ -619,7 +709,11 @@ class SimulationSessionManager:
                     source_capacity_limit_mw=state.source_capacity_limit_mw,
                     switching_budget=switching_budget,
                 )
-                selected_cand = b_map.get(algo_u) or next(iter(b_map.values()))
+                selected_cand = b_map.get(algo_u)
+                if selected_cand is None:
+                    raise SessionActionError(f"Unknown restoration algorithm: {algo_u}")
+                if not selected_cand.feasible or not selected_cand.ac_validated:
+                    raise SessionActionError("The selected baseline has no AC-feasible plan.")
                 actions = selected_cand.actions
 
         for act in (actions or []):
@@ -633,6 +727,13 @@ class SimulationSessionManager:
             "session": state.model_dump(),
         }
 
+    @synchronized
+    def initial_session(self, session_id: Optional[str] = None) -> SimulationSessionState:
+        sid = session_id or self._default_session_id
+        current = self.get_or_create_session(sid)
+        return copy.deepcopy(self._history.get(sid, [current])[0])
+
+    @synchronized
     def undo(self, session_id: Optional[str] = None) -> SimulationSessionState:
         sid = session_id or self._default_session_id
         hist = self._history.get(sid, [])

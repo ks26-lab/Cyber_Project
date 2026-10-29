@@ -1,6 +1,6 @@
 # GRIDSEC // ZERO — Data Structures & Algorithms Implementation Reference
 
-All 13 algorithms are implemented in [`backend/app/dsa/algorithms_catalog.py`](file:///Users/umikasood/Cyber_Project/backend/app/dsa/algorithms_catalog.py) alongside [`backend/app/dsa/trace.py`](file:///Users/umikasood/Cyber_Project/backend/app/dsa/trace.py), [`backend/app/dsa/priority_queue.py`](file:///Users/umikasood/Cyber_Project/backend/app/dsa/priority_queue.py), and [`backend/app/dsa/hashing.py`](file:///Users/umikasood/Cyber_Project/backend/app/dsa/hashing.py). Every execution produces an `AlgorithmTrace` containing synchronized pseudocode line pointers, step-by-step operations (`AlgorithmTraceStep`), internal data-structure snapshots (`frontier_state`), theoretical asymptotic complexity, empirical operation counts, and execution runtime in milliseconds.
+The original 13 algorithms are implemented in [`backend/app/dsa/algorithms_catalog.py`](file:///Users/umikasood/Cyber_Project/backend/app/dsa/algorithms_catalog.py) alongside [`backend/app/dsa/trace.py`](file:///Users/umikasood/Cyber_Project/backend/app/dsa/trace.py), [`backend/app/dsa/priority_queue.py`](file:///Users/umikasood/Cyber_Project/backend/app/dsa/priority_queue.py), and [`backend/app/dsa/hashing.py`](file:///Users/umikasood/Cyber_Project/backend/app/dsa/hashing.py). Every execution produces an `AlgorithmTrace` containing synchronized pseudocode line pointers, step-by-step operations (`AlgorithmTraceStep`), internal data-structure snapshots (`frontier_state`), theoretical asymptotic complexity, empirical operation counts, and execution runtime in milliseconds.
 
 ---
 
@@ -15,7 +15,7 @@ All 13 algorithms are implemented in [`backend/app/dsa/algorithms_catalog.py`](f
 | 5 | `DSU` | `DisjointSetUnion` (Path Compression + Union by Rank) | $O(E \cdot \alpha(V))$ | $O(V)$ | Dynamic island tracking & cycle-free radial reconfiguration check |
 | 6 | `KRUSKAL_MST` | Sorted Branch Array + `DisjointSetUnion` | $O(E \log E)$ | $O(V + E)$ | Minimum-ohmic-loss radial spanning forest across tie switches |
 | 7 | `KNAPSACK_DP` | 2D Dynamic Programming Table `dp[i][w]` | $O(N \cdot W)$ | $O(N \cdot W)$ | Optimal critical-load preservation & Tier-3 load shedding under supply deficit |
-| 8 | `MIN_COST_MAX_FLOW` | Residual Network + Successive Shortest-Path | $O(F \cdot E \log V)$ | $O(V + E)$ | Multi-source (Substation + BESS + Solar) capacity-constrained power routing |
+| 8 | `MIN_COST_MAX_FLOW` | Residual Network + BFS Augmenting Paths | $O(V E^2)$ | $O(V + E)$ | Multi-source (Substation + BESS + Solar) capacity-constrained power routing |
 | 9 | `ASTAR_ROUTING` | Binary `MinHeap` + 3D Euclidean Impedance Heuristic | $O((V + E) \log V)$ | $O(V)$ | Spatial-electrical emergency tie-switch routing toward de-energized critical loads |
 | 10 | `MAX_HEAP_TRIAGE` | Binary `MaxHeap` ($O(\log N)$ sift-up / sift-down) | $O(N \log N)$ | $O(N)$ | Emergency restoration prioritization for Tier-1 Hospital, Water & SCADA loads |
 | 11 | `HASH_INDEX` | Multi-Key Inverted Hash Table (`AssetIndexTable`) | $O(1)$ average lookup | $O(N)$ | Constant-time resolution of substation IDs, priority tiers, and pincodes |
@@ -30,3 +30,10 @@ All 13 algorithms are implemented in [`backend/app/dsa/algorithms_catalog.py`](f
 2. **Backend BFS Queue (`backend/app/dsa/bfs.py` & `algorithms_catalog.py`)**: Uses `collections.deque.popleft()` ($O(1)$) and emits per-step FIFO queue snapshots.
 3. **True Post-Action AC Candidate Validation (`backend/app/power/power_flow_service.py`)**: Upgraded candidate route validation from reading pre-existing static topology flows to cloning the network, applying candidate switch/BESS/curtailment actions, and solving a true post-action Newton-Raphson AC load flow.
 
+
+
+## Additional reserve matching and live-state integration
+
+`BIPARTITE_MATCHING` is the fourteenth catalog entry. Its implementation in `backend/app/dsa/matching.py` performs BFS compatibility checks followed by actual augmenting-path bipartite matching. Each reserve source receives at most one critical-load assignment, subject to reachability, source power and a quarter-hour battery-energy horizon. Complexity is O(S(V+E) + S E_b). Trace steps expose compatibility construction and reassignment. This is a discrete reserve-planning approximation requiring feeder-capacity and AC checks before dispatch.
+
+The legacy identifier `MIN_COST_MAX_FLOW` remains for API compatibility. The actual implementation is Edmonds–Karp max-flow/min-cut, O(V E²), and now exposes residual-cut capacity, cut edges and bounded edge flows. Its input reflects current unavailable branches; it is not a minimum-cost optimizer and is not AC power flow. Existing traversals, routing, MST, DP and indexing implementations remain operational. Current session algorithms receive switched branch states, actual allocation and source limits rather than an untouched nominal graph. Game routing/MST hints explicitly mark available open ties as candidate maneuvers.

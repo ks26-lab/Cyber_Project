@@ -62,13 +62,13 @@ MISSIONS_CATALOG: List[MissionDefinition] = [
         difficulty="ROOKIE",
         network_id="TRAINING_FEEDER",
         briefing=(
-            "A primary 11 kV trunk cable (LINE-02-06) supplying City University has suffered a trench fault. "
+            "A primary 11 kV trunk cable (LINE-04-06) supplying City University has suffered a trench fault. "
             "Use Breadth-First Search (BFS) to inspect the de-energized island and close normally-open tie switch "
             "SW-TIE-2 (BUS-03 -> BUS-06) to restore power to the university campus without violating voltage limits."
         ),
         learning_focus="Graph Reachability (BFS) & Basic Radial Tie-Switch Restoration",
         recommended_dsa=["BFS", "DSU"],
-        initial_faulted_branches=["LINE-02-06"],
+        initial_faulted_branches=["LINE-04-06"],
         max_switching_budget=2,
         target_critical_pct=100.0,
         min_voltage_pu=0.93,
@@ -155,14 +155,14 @@ MISSIONS_CATALOG: List[MissionDefinition] = [
         difficulty="ENGINEER",
         network_id="TRAINING_FEEDER",
         briefing=(
-            "Two simultaneous feeder faults (LINE-02-03 and LINE-02-04) have isolated both the Trauma Hospital (BUS-03) "
+            "Two simultaneous feeder faults (LINE-02-03 and LINE-03-04) have isolated both the Trauma Hospital (BUS-03) "
             "and Municipal Water Treatment (BUS-04). A naive graph-only restoration that closes long residential tie lines "
             "without reactive/active power support or load shedding will cause voltage drop violations. "
             "Find an AC-feasible switching + BESS + selective curtailment plan."
         ),
         learning_focus="Graph Feasibility vs. AC Newton-Raphson Voltage & Thermal Feasibility",
         recommended_dsa=["TARJAN_BRIDGES", "KRUSKAL_MST", "DIJKSTRA"],
-        initial_faulted_branches=["LINE-02-03", "LINE-02-04"],
+        initial_faulted_branches=["LINE-02-03", "LINE-03-04"],
         max_switching_budget=4,
         target_critical_pct=98.0,
         min_voltage_pu=0.92,
@@ -242,13 +242,13 @@ MISSIONS_CATALOG: List[MissionDefinition] = [
         difficulty="COMMANDER",
         network_id="TRAINING_FEEDER",
         briefing=(
-            "At 00:00 hours (Solar PV output depleted), faults on LINE-02-03 and LINE-06-10 plus an upstream intake cap "
+            "At 00:00 hours (Solar PV output depleted), faults on LINE-02-03 and LINE-08-10 plus an upstream intake cap "
             "of 6.8 MW threaten city stability. Coordinate tie-switch reconfiguration with optimal BESS discharge "
             "without exhausting battery state-of-charge below minimum reserve limits."
         ),
         learning_focus="Discrete-Time Battery Dispatch (kW vs kWh) & Constrained Restoration",
         recommended_dsa=["MIN_COST_MAX_FLOW", "KNAPSACK_DP", "ASTAR_ROUTING"],
-        initial_faulted_branches=["LINE-02-03", "LINE-06-10"],
+        initial_faulted_branches=["LINE-02-03", "LINE-08-10"],
         source_capacity_limit_mw=6.8,
         max_switching_budget=5,
         target_critical_pct=96.0,
@@ -286,12 +286,12 @@ MISSIONS_CATALOG: List[MissionDefinition] = [
         network_id="TRAINING_FEEDER",
         briefing=(
             "A spoofed IEC-61850 GOOSE intrusion has simultaneously tripped three major feeder trunks: "
-            "LINE-02-03 (Hospital), LINE-02-04 (Water Treatment), and LINE-06-10 (Commercial District). "
+            "LINE-02-03 (Hospital), LINE-03-04 (Water Treatment), and LINE-08-10 (Commercial District). "
             "Isolate the damage, close tie switches across the ring boundary, and execute CAPER to restore the city."
         ),
         learning_focus="Multi-Island Reconfiguration (DSU + Kruskal MST) & Cyber-Induced Blackout Recovery",
         recommended_dsa=["DSU", "KRUSKAL_MST", "TARJAN_BRIDGES", "MIN_COST_MAX_FLOW"],
-        initial_faulted_branches=["LINE-02-03", "LINE-02-04", "LINE-06-10"],
+        initial_faulted_branches=["LINE-02-03", "LINE-03-04", "LINE-08-10"],
         max_switching_budget=6,
         target_critical_pct=95.0,
         min_voltage_pu=0.92,
@@ -328,7 +328,7 @@ MISSIONS_CATALOG: List[MissionDefinition] = [
         network_id="IEEE_33_DISTRIBUTION",
         briefing=(
             "The ultimate test on the standard IEEE 33-Bus radial distribution benchmark. "
-            "Three main sectionalizing branches (LINE-2-3, LINE-6-7, LINE-12-13) have faulted while substation "
+            "Three main sectionalizing branches (LINE-2, LINE-6, LINE-12) have faulted while substation "
             "supply is constrained to 3.4 MW. Use the 5 normally-open IEEE 33-bus tie switches, both BESS units, "
             "and criticality-aware load triage to keep the city's hospitals, water infrastructure, and SCADA centers alive."
         ),
@@ -342,7 +342,7 @@ MISSIONS_CATALOG: List[MissionDefinition] = [
             "MIN_COST_MAX_FLOW",
             "ASTAR_ROUTING",
         ],
-        initial_faulted_branches=["LINE-2-3", "LINE-6-7", "LINE-12-13"],
+        initial_faulted_branches=["LINE-2", "LINE-6", "LINE-12"],
         source_capacity_limit_mw=3.4,
         max_switching_budget=6,
         target_critical_pct=92.0,
@@ -393,6 +393,7 @@ class MissionService:
         mission_id: str,
         session_id: Optional[str] = None,
         seed: int = 42,
+        source_capacity_limit_mw: Optional[float] = None,
     ) -> Dict[str, Any]:
         mission = cls.get_mission(mission_id)
         initial_overrides: Dict[str, Any] = {
@@ -430,7 +431,7 @@ class MissionService:
             seed=seed,
             initial_overrides=initial_overrides,
             initial_faults=initial_faults,
-            source_capacity_limit_mw=mission.source_capacity_limit_mw,
+            source_capacity_limit_mw=source_capacity_limit_mw if source_capacity_limit_mw is not None else mission.source_capacity_limit_mw,
         )
         evaluation = cls.evaluate_session(mission.mission_id, session)
         return {
@@ -448,7 +449,7 @@ class MissionService:
         mission = cls.get_mission(mission_id)
         kpis = session.kpis
         switching_count = sum(
-            1 for a in session.action_log if a.get("action_type") in ("CLOSE_SWITCH", "OPEN_SWITCH", "ISOLATE_BRANCH", "RESTORE_BRANCH")
+            1 for a in session.action_log if a.get("action_type", a.get("action")) in ("CLOSE_SWITCH", "CLOSE_TIE_SWITCH", "TOGGLE_SWITCH", "OPEN_SWITCH", "ISOLATE_BRANCH", "RESTORE_BRANCH")
         )
         metrics_map = {
             "critical_load_restored_pct": float(kpis.get("critical_load_restored_pct", 0.0)),
@@ -488,6 +489,8 @@ class MissionService:
                 }
             )
 
+        physically_feasible = session.power_flow.converged and not session.power_flow.violations and session.solver_provenance == "AC_SOLVED"
+        mandatory_all_passed = mandatory_all_passed and physically_feasible and switching_count <= mission.max_switching_budget
         grade = "S" if mandatory_all_passed and metrics_map["resilience_score"] >= 90 else (
             "A" if mandatory_all_passed else (
                 "B" if metrics_map["critical_load_restored_pct"] >= 80 else "C"
@@ -499,7 +502,8 @@ class MissionService:
             "mission_Passed": mandatory_all_passed,
             "passed": mandatory_all_passed,
             "grade": grade,
-            "score": round(metrics_map["resilience_score"], 2),
+            "score": round(metrics_map["resilience_score"], 2) if physically_feasible else 0.0,
+            "ac_feasible": physically_feasible,
             "switching_actions_used": switching_count,
             "switching_budget": mission.max_switching_budget,
             "objectives": obj_results,
@@ -516,6 +520,7 @@ class MissionService:
         restoration algorithms on the exact same initial fault/constraint scenario.
         """
         session = session_manager.get_or_create_session(session_id=session_id)
+        initial = session_manager.initial_session(session.session_id)
         mission_id = session.mission_id or "MISSION_03"
         mission = cls.get_mission(mission_id)
 
@@ -528,8 +533,8 @@ class MissionService:
             "ac_converged": session.power_flow.converged,
             "ac_feasible": (
                 session.power_flow.converged
-                and session.kpis.get("voltage_violations_count", 0) == 0
-                and session.kpis.get("thermal_violations_count", 0) == 0
+                and session.solver_provenance == "AC_SOLVED"
+                and not session.power_flow.violations
             ),
             "critical_load_restored_pct": session.kpis.get("critical_load_restored_pct", 0.0),
             "total_load_restored_pct": session.kpis.get("total_load_restored_pct", 0.0),
@@ -542,18 +547,9 @@ class MissionService:
         }
 
         # Reconstruct initial faulted baseline state for fair algorithm comparison
-        faulted_branches = (
-            [f.target_id for f in session.active_faults if f.active]
-            or mission.initial_faulted_branches
-            or ["LINE-02-03"]
-        )
-        base_overrides = {
-            "lines": {br: {"status": "OUT_OF_SERVICE"} for br in faulted_branches},
-            "switches": {},
-            "batteries": {},
-            "load_curtailment": {},
-        }
-        limit_mw = session.source_capacity_limit_mw or mission.source_capacity_limit_mw
+        faulted_branches = [f.asset_id for f in initial.active_faults if not f.cleared]
+        base_overrides = initial.state_overrides
+        limit_mw = initial.source_capacity_limit_mw
 
         from app.restoration.caper import CAPEREngine
         from app.restoration.baselines import BaselineRestorationSuite

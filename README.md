@@ -1,75 +1,72 @@
-# GRIDSEC // ZERO — THE CITY MUST STAY ALIVE
+# GRIDSEC // ZERO
 
-**Cyber-Physical Grid Resilience, Intelligent Critical-Load Restoration & Explainable Graph Optimization**
+An electricity-grid intelligence and restoration platform: explore a representative India network, restore critical local service, study the computed evidence, or operate the feeder yourself in **GRID COMMAND**.
 
-[![Solver Provenance](https://img.shields.io/badge/Physics_Solver-pandapower_3.5.6_AC_Newton--Raphson-10B981)](file:///Users/umikasood/Cyber_Project/POWER_MODEL.md)
-[![DSA Catalog](https://img.shields.io/badge/DSA_Catalog-13_Explainable_Algorithms-8B5CF6)](file:///Users/umikasood/Cyber_Project/DSA_IMPLEMENTATION.md)
-[![Restoration Engine](https://img.shields.io/badge/Proposed_Algorithm-8--Stage_CAPER-22D3EE)](file:///Users/umikasood/Cyber_Project/CAPER_METHOD.md)
-[![Backend Pytest](https://img.shields.io/badge/Backend_Pytest-328%2F328_Passing-10B981)](file:///Users/umikasood/Cyber_Project/IMPLEMENTATION_STATUS.md)
+The existing Next.js application and FastAPI backend share real network models, graph algorithms, CAPER candidate generation, pandapower AC calculations and finite battery storage. SVG views keep the product usable when WebGL is unavailable. This is a reproducible engineering simulator, not a live utility control system.
 
----
+## Run locally
 
-## Overview
-
-**GRIDSEC // ZERO** transforms the **GRIDSEC** power-grid cybersecurity and resilience platform into a unified 3-experience cyber-physical application:
-
-1. **Experience A — The 3D City Strategy Game (`/simulation`, `/missions`, `/challenge`)**:
-   - Interactive Three.js / React Three Fiber 3D city where operators defend and restore critical urban infrastructure (**Trauma Hospital**, **Municipal Water Treatment**, **SCADA Command Center**, **Engineering University**, **Residential Districts**, **Solar PV**, and **Grid BESS**) across **7 playable campaign missions**.
-2. **Experience B — The AC Power-Flow Engineering Simulator (`/dashboard`, `/national-grid`, `/sandbox`)**:
-   - Authentic nonlinear Newton-Raphson AC load-flow calculations (`pandapower 3.5.6`) across 4 networks:
-     - `TRAINING_FEEDER`: 12-Bus 33/11 kV Urban Distribution Feeder (4 tie switches, 2 BESS units)
-     - `IEEE_33_DISTRIBUTION`: Standard Baran & Wu (1989) 33-Bus 12.66 kV Radial Distribution Benchmark (`pandapower.networks.case33bw()`, 5 tie switches, 2 BESS units)
-     - `IEEE_30`: IEEE 30-Bus 132/33 kV Transmission Benchmark
-     - `INDIA_GRID_59`: 59-Substation Indian National Power Grid Reference across 5 RLDC regions
-   - Discrete-time Battery Energy Storage System (`BatteryModel`) enforcing power ($\text{kW}$) vs. energy ($\text{kWh}$) state-of-charge physics.
-3. **Experience C — The Explainable DSA & CAPER Research Laboratory (`/algorithms`, `/algorithms/caper`, `/research`)**:
-   - **13-Algorithm DSA Catalog** with step-by-step trace replay and live data-structure frontier inspection (`BFS`, `DFS`, `DIJKSTRA`, `TARJAN_BRIDGES`, `DSU`, `KRUSKAL_MST`, `KNAPSACK_DP`, `MIN_COST_MAX_FLOW`, `ASTAR_ROUTING`, `MAX_HEAP_TRIAGE`, `HASH_INDEX`, `PREFIX_TRIE`, `CIRCULAR_BUFFER`).
-   - **Proposed 8-Stage CAPER Engine** (*Criticality-Aware Power Emergency Restoration*) benchmarked against 4 baselines (`PRIORITY_GREEDY`, `GRAPH_GREEDY`, `AC_GREEDY`, and `MILP_REFERENCE` via SciPy HiGHS) with full multi-seed statistical distributions (`Mean ± SD`, `Median / IQR`, `95% CI`, `AC Feasibility Rate %`) and CSV export.
-
----
-
-## Quick Start
-
-### 1. Start the FastAPI + `pandapower` Backend (`Port 8000`)
+From the repository root, install backend dependencies if needed:
 
 ```bash
-# From the repository root:
-/Users/umikasood/Cyber_Project/.venv/bin/uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+python3 -m venv .venv
+.venv/bin/python -m pip install -r backend/requirements.txt
+.venv/bin/python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 ```
 
-- **Backend API Root**: `http://127.0.0.1:8000/api/gridzero/session`
-- **Swagger OpenAPI Docs**: `http://127.0.0.1:8000/docs`
-- **Legacy GRIDSEC HTML Application**: `http://127.0.0.1:8000/index.html`, `/app.html`, `/game.html`
-
-### 2. Start the Next.js 14 + React Three Fiber Frontend (`Port 3000`)
+In another terminal:
 
 ```bash
 cd apps/web
+npm ci
 npm run dev
 ```
 
-- **GRID//ZERO Web Application**: `http://localhost:3000`
+Open <http://localhost:3000>. Requests to `/api/*` are proxied to the local backend on port 8000. The frontend uses the patched Next.js 15.5 maintenance line with React 19 and React Three Fiber 9; keep the lockfile when installing. For a production build, run `npm run build` and `npm run start` in `apps/web`.
 
-### 3. Run Automated Verification Suites
+## Product paths
+
+- **Explore** (`/`): SVG India geography, selectable states and modeled substations, regional metrics, independent national contingencies, and selected-area dashboard drill-down.
+- **Restore → Results** (`/restore`, `/results`): reproducible local faults, computed CAPER and baseline comparison, actual backend application, AC validation and qualified before/after supply.
+- **GRID COMMAND** (`/grid-command`): five playable levels with repairs, switching, generation and storage dispatch, load allocation, credits, turn limits, scoring, storm waves, undo, replay and explainable algorithm hints.
+- **Technical Lab**: all existing algorithm, CAPER, engineering, mission, challenge, cyber, sandbox, research and documentation routes remain accessible. Legacy HTML applications remain served by the backend.
+
+The national model is a representative 59-node, 54-corridor dataset. Census-derived state boundaries and model provenance are disclosed in the map. The local training feeder is a separate model; selecting a national asset does not create a physical national-to-local connection.
+
+## Verify
 
 ```bash
-# Run all 328 backend pytest tests:
-/Users/umikasood/Cyber_Project/.venv/bin/pytest backend/ --ignore=backend/test_backend.py --ignore=backend/app/power/test_networks.py -q
-
-# Run frontend TypeScript & production build checks:
-npm run typecheck --prefix apps/web
-npm run build --prefix apps/web
+.venv/bin/python -m pytest backend/ -q --ignore=backend/test_backend.py --ignore=backend/app/power/test_networks.py
+npm --prefix apps/web run lint
+npm --prefix apps/web run typecheck
+npm --prefix apps/web run build
+node --test apps/web/scripts/webgl_capability.test.mjs
+node apps/web/scripts/verify_grid_metrics.mjs
 ```
 
----
+With both servers running, from `apps/web` run browser suites **sequentially** because some lab views intentionally use the shared local operator session:
 
-## Documentation Index
+```bash
+node scripts/verify_webgl_fallback.mjs
+node scripts/verify_map_dashboard.mjs
+node scripts/verify_grid_command.mjs
+node scripts/verify_case_study.mjs
+```
 
-- **[ARCHITECTURE.md](file:///Users/umikasood/Cyber_Project/ARCHITECTURE.md)** — Hybrid monorepo architecture, route map, and unified session state design.
-- **[DSA_IMPLEMENTATION.md](file:///Users/umikasood/Cyber_Project/DSA_IMPLEMENTATION.md)** — All 13 Data Structures & Algorithms, complexity analysis, and step-trace contracts.
-- **[POWER_MODEL.md](file:///Users/umikasood/Cyber_Project/POWER_MODEL.md)** — Nonlinear AC Newton-Raphson equations, 4 network models, and discrete-time BESS physics.
-- **[CAPER_METHOD.md](file:///Users/umikasood/Cyber_Project/CAPER_METHOD.md)** — Mathematical formulation and 8-stage pipeline of the proposed CAPER restoration algorithm.
-- **[RESEARCH.md](file:///Users/umikasood/Cyber_Project/RESEARCH.md)** — Reproducible multi-seed benchmark protocol, statistical tables, and empirical findings.
-- **[DEMO_GUIDE.md](file:///Users/umikasood/Cyber_Project/DEMO_GUIDE.md)** — 5-minute live faculty review and technical interview script.
-- **[IMPLEMENTATION_STATUS.md](file:///Users/umikasood/Cyber_Project/IMPLEMENTATION_STATUS.md)** — Complete implementation and verification ledger.
-- **[docs/upgrade/BASELINE_AUDIT.md](file:///Users/umikasood/Cyber_Project/docs/upgrade/BASELINE_AUDIT.md)** — Pre-upgrade baseline audit and legacy compatibility checklist.
+The scripts use installed Google Chrome (or `CHROME_PATH` where supported) and real backend responses. They save desktop/mobile screenshots in `docs/screenshots/`. No mocked result API is used. Runtime context-loss verification is reported as skipped only when the host cannot create a real graphics context; disabled-WebGL checks always run.
+
+## Engineering interpretation and limits
+
+AC convergence, voltage/loading limits and source ceilings determine electrical feasibility. Graph connectivity, max-flow, matching and knapsack produce reachability or planning results; they do not establish a physically valid AC operating point. Attempted supply from infeasible states is explicitly qualified and is excluded from verified-supply charts. CAPER evaluates a finite candidate portfolio, so it is a heuristic rather than a global optimality guarantee.
+
+Simulation, research and game state is in process memory. Operator updates are locked; game actions additionally require an expected version and roll back on failure. Backend restart expires game sessions. Authentication, persistent/distributed game storage and real utility telemetry/control are outside this local simulator. A multi-worker deployment would require shared session persistence and concurrency control. See the final verification report for measured checks and remaining limits.
+
+## Documentation
+
+- [Architecture](ARCHITECTURE.md)
+- [GRID COMMAND rules, scoring and all-level walkthrough](docs/GRID_COMMAND.md)
+- [Algorithm implementations and interpretations](DSA_IMPLEMENTATION.md)
+- [Power and battery model](POWER_MODEL.md)
+- [CAPER methodology](CAPER_METHOD.md)
+- [Faculty demo](DEMO_GUIDE.md)
+- [Product verification report](docs/PRODUCT_VERIFICATION.md)

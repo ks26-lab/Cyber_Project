@@ -145,12 +145,13 @@ class GridDSACatalog:
         },
         {
             "id": "MIN_COST_MAX_FLOW",
-            "name": "Successive Shortest-Path Min-Cost Max-Flow",
+            "name": "Edmonds-Karp Max-Flow / Min-Cut",
             "category": "OPTIMIZATION_FLOW",
-            "time_complexity": "O(F * E log V)",
+            "time_complexity": "O(V * E^2)",
             "space_complexity": "O(V + E)",
             "grid_role": "Multi-Source (Grid + BESS) Capacity-Constrained Power Routing",
         },
+        {"id": "BIPARTITE_MATCHING", "name": "Reserve Source–Critical Load Bipartite Matching", "category": "MATCHING", "time_complexity": "O(S(V + E) + S E_b)", "space_complexity": "O(V + E + E_b)", "grid_role": "One-to-one reserve-source assignment to reachable critical loads; requires AC verification"},
         {
             "id": "ASTAR_ROUTING",
             "name": "A* Spatial-Electrical Heuristic Routing",
@@ -238,7 +239,7 @@ class GridDSACatalog:
             is_tie = "TIE" in l.line_id.upper() or l.status == "OUT_OF_SERVICE"
             if l.line_id in tripped:
                 continue
-            if is_tie and not include_tie_lines:
+            if not include_tie_lines and l.status in ("OUT_OF_SERVICE", "DISCONNECTED", "TRIPPED", "OPEN"):
                 continue
             z_ohm = math.hypot(float(l.resistance_ohm or 0.1), float(l.reactance_ohm or 0.2))
             weight = round(max(0.05, z_ohm * (1.5 if is_tie else 1.0)), 4)
@@ -1059,7 +1060,7 @@ class GridDSACatalog:
     ) -> AlgorithmTrace:
         t0 = time.perf_counter()
         node_ids, node_meta, edges, _ = cls._extract_graph_Representation(
-            network_data, tripped_edges, include_tie_lines=True
+            network_data, tripped_edges, include_tie_lines=False
         )
         super_source = "SUPER_SOURCE"
         super_sink = "SUPER_SINK"
@@ -1148,6 +1149,17 @@ class GridDSACatalog:
                     )
                 )
 
+        reachable = {super_source}
+        queue = deque([super_source])
+        while queue:
+            u = queue.popleft()
+            for v, capacity in cap[u].items():
+                if v not in reachable and capacity - flow[u][v] > 1e-4:
+                    reachable.add(v)
+                    queue.append(v)
+        cut_capacity = sum(c for u in reachable for v, c in cap[u].items() if v not in reachable)
+        cut_edges = [e["edge_id"] for e in edges if (e["u"] in reachable) != (e["v"] in reachable)]
+        steps.append(AlgorithmTraceStep(step_index=len(steps), operation="MIN_CUT", description=f"Residual BFS identifies a {cut_capacity:.3f} MW minimum cut; maximum flow is {max_flow_mw:.3f} MW.", active_nodes=[n for n in reachable if n in node_ids], active_edges=cut_edges, frontier_state={"min_cut_edges": cut_edges, "min_cut_capacity_mw": round(cut_capacity, 3)}))
         elapsed = round((time.perf_counter() - t0) * 1000.0, 3)
         return AlgorithmTrace(
             algorithm_id="MIN_COST_MAX_FLOW",
@@ -1166,6 +1178,9 @@ class GridDSACatalog:
             steps=steps,
             final_output={
                 "max_deliverable_mw": max_flow_mw,
+                "min_cut_capacity_mw": round(cut_capacity,3),
+                "min_cut_edges": cut_edges,
+                "edge_flows": [{"edge_id":e["edge_id"],"flow_mw":round(flow[e["u"]][e["v"]] * e["capacity_mw"] / max(cap[e["u"]][e["v"]],1e-9),3),"capacity_mw":e["capacity_mw"]} for e in edges],
                 "total_demand_mw": round(total_crit_sink_mw, 3),
                 "delivery_ratio_pct": round((max_flow_mw / max(1e-6, total_crit_sink_mw)) * 100.0, 1),
                 "augmenting_paths": augmenting_paths,
@@ -1518,6 +1533,10 @@ class GridDSACatalog:
             return cls.run_knapsack_dp(ndata, available_supply_mw=cap_mw)
         elif aid in ("MAX_FLOW", "MIN_COST_MAX_FLOW", "FLOW"):
             return cls.run_max_flow(ndata, tripped_edges=tripped)
+        elif aid == "BIPARTITE_MATCHING":
+            from app.dsa.matching import run_reserve_matching
+            nodes, meta, edges, _ = cls._extract_graph_Representation(ndata, tripped)
+            return run_reserve_matching(ndata, nodes, edges, meta)
         elif aid in ("ASTAR", "ASTAR_ROUTING"):
             return cls.run_astar(ndata, source_bus=src, target_bus=tgt, tripped_edges=tripped)
         elif aid in ("MAX_HEAP", "MAX_HEAP_TRIAGE"):

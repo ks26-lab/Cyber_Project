@@ -12,7 +12,7 @@ During distribution and sub-transmission emergencies (physical feeder trips, ups
 2. **Priority-Only Load Shedding (`PRIORITY_GREEDY`)** sheds low-priority loads within an energized island, but cannot reconfigure normally-open tie switches to rescue isolated Tier-1 hospitals or water treatment plants.
 3. **Full Nonlinear AC Mixed-Integer Nonlinear Programming (AC-MINLP)** is NP-hard and computationally intractable for sub-second interactive SCADA decision support.
 
-**CAPER** bridges this gap via an **8-stage hybrid Graph + Dynamic Programming + Post-Action Newton-Raphson AC Verification** pipeline that executes in ~15–25 ms while guaranteeing physical AC feasibility.
+**CAPER** bridges this gap via an **8-stage hybrid Graph + Dynamic Programming + Post-Action Newton-Raphson AC Verification** pipeline that measures execution time per run and validates candidate operating points using nonlinear AC analysis. It searches a finite portfolio and cannot guarantee a globally optimal or always-feasible restoration. The application refuses an infeasible plan and reports rejection evidence.
 
 ---
 
@@ -37,6 +37,11 @@ flowchart LR
 5. **Stage 5 — True Post-Action Newton-Raphson AC Power-Flow Validation**: Clones the electrical network for each candidate $c \in \mathcal{C}$, applies its switching, BESS dispatch, and load curtailment actions, and solves `pandapower.runpp()` Newton-Raphson AC power flow.
 6. **Stage 6 — Multi-Objective Scoring & Feasibility Ranking**: Filters candidates violating $|V_i| \in [0.92, 1.08]\text{ pu}$, $\text{Loading}_e \le 100\%$, or $P_{\text{slack}} \le P_{\text{source},\max}$, and scores each candidate via:
    $$J(c) = 0.65\,\text{CritRestored}_{\%}(c) + 0.30\,\text{TotalRestored}_{\%}(c) + 8.0\,\mathcal{F}_{\text{Jain}}(c) - 3.5\,P_{\text{loss}}(c) - 1.2\,N_{\text{sw}}(c) - \Phi_{\text{viol}}(c)$$
-7. **Stage 7 — Optimal Plan Selection & Transactional Commit**: Selects $c^* = \arg\max_{c \in \mathcal{C}} J(c)$ (lexicographically prioritizing AC-feasible plans).
+7. **Stage 7 — Feasibility-Ranked Plan Selection & Transactional Commit**: Selects $c^* = \arg\max_{c \in \mathcal{C}} J(c)$ (lexicographically prioritizing AC-feasible plans).
 8. **Stage 8 — Explainable Step-by-Step Trace Serialization**: Bundles the top-level CAPER trace with all 6 underlying DSA subtraces (`BFS`, `DSU`, `TARJAN_BRIDGES`, `DIJKSTRA`, `KRUSKAL_MST`, `KNAPSACK_DP`).
 
+
+
+## Integrated product behavior
+
+The main Restore screen runs CAPER and baselines on the same initial faulted feeder, retains that comparison, and applies a valid plan through the existing backend endpoint. The applied state is solved again. GRID COMMAND uses CAPER as an explainable advisor and same-initial-state comparator; human moves remain individually validated. Infeasible candidates are never presented as verified recovered service. Observed runtimes depend on topology, solver environment and candidate portfolio; no fixed latency or benchmark advantage is promised.

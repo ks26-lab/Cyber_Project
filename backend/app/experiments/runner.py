@@ -228,8 +228,8 @@ class ExperimentRunner:
         if run_id in self._runs:
             return self._runs[run_id]
         # Return first available run if requested ID is 'latest' or not found
-        if self._runs:
-            return next(iter(self._runs.values()))
+        if run_id == "latest" and self._runs:
+            return list(self._runs.values())[-1]
         return None
 
     def run_experiment(

@@ -10,6 +10,8 @@ from typing import Dict, Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from app.simulation.session_manager import SessionActionError
 
 from app.database.connection import engine, SessionLocal, db_mode
 from app.models.base import Base
@@ -33,6 +35,7 @@ from app.api.routes.cascades import router as cascades_router
 from app.api.routes.cyber import router as cyber_router
 from app.api.routes.scheduling import router as scheduling_router
 from app.api.routes.gridzero import router as gridzero_router
+from app.api.routes.grid_command import router as grid_command_router
 
 logger = logging.getLogger("gridsec.main")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -102,6 +105,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+@app.exception_handler(SessionActionError)
+async def session_action_error(request, exc):
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+
 # Enable CORS for React and local frontend development
 app.add_middleware(
     CORSMiddleware,
@@ -125,6 +133,7 @@ app.include_router(cascades_router, prefix="/api")
 app.include_router(cyber_router, prefix="/api")
 app.include_router(scheduling_router, prefix="/api")
 app.include_router(gridzero_router, prefix="/api")
+app.include_router(grid_command_router, prefix="/api")
 
 
 @app.get("/api/health", summary="Health Check and Database Status")

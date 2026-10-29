@@ -1,81 +1,90 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Zap, Maximize2, Minimize2 } from "lucide-react";
-const links = [
-  ["/", "Overview"],
-  ["/simulation", "Simulation"],
-  ["/algorithms", "Algorithms"],
-  ["/research", "Research"],
-  ["/national-grid", "India Grid"],
-  ["/cyber-lab", "Cyber Lab"],
-  ["/demo", "Demo"],
-];
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 export function TopNavBar() {
-  const path = usePathname();
-  const [present, setPresent] = useState(false);
-  useEffect(() => {
-    document.documentElement.dataset.presentation = String(present);
-    const escape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPresent(false);
-    };
-    window.addEventListener("keydown", escape);
-    return () => window.removeEventListener("keydown", escape);
-  }, [present]);
+  const path = usePathname(),
+    router = useRouter();
+  const [guided, setGuided] = useState(false);
   return (
     <header className="site-header">
       <div className="brand-row">
         <Link href="/" className="brand">
-          <span className="brand-icon">
-            <Zap size={18} />
-          </span>
-          GRIDSEC <span className="text-blue-700">// ZERO</span>
+          GRIDSEC <span className="text-blue-800">{"// ZERO"}</span>
         </Link>
-        <span className="brand-caption">
-          Infrastructure resilience, explained.
-        </span>
-        <button
-          className="quiet-button presentation-toggle"
-          aria-pressed={present}
-          onClick={() => setPresent(!present)}
+        <span className="brand-caption">Keep the critical connected.</span>
+        <Link
+          href="/grid-command"
+          className="command-nav-link"
+          aria-current={path === "/grid-command" ? "page" : undefined}
         >
-          {present ? <Minimize2 size={14} /> : <Maximize2 size={14} />}{" "}
-          {present ? "Exit presentation" : "Present"}
+          Play Grid Command
+        </Link>
+        <button
+          className="quiet-button"
+          aria-pressed={guided}
+          onClick={() => {
+            setGuided(!guided);
+            if (!guided) router.push("/");
+          }}
+        >
+          Guided Demo
         </button>
       </div>
       <nav aria-label="Primary navigation" className="primary-nav">
-        {links.map(([href, label]) => (
-          <Link
-            key={href}
-            href={href}
-            aria-current={
-              (href === "/" ? path === "/" : path.startsWith(href))
-                ? "page"
-                : undefined
-            }
-          >
-            {label}
+        {[
+          ["/", "Explore"],
+          ["/restore", "Restore"],
+          ["/results", "Results"],
+        ].map(([h, l]) => (
+          <Link key={h} href={h} aria-current={path === h ? "page" : undefined}>
+            {l}
           </Link>
         ))}
         <details className="more-nav">
-          <summary>More</summary>
+          <summary>Technical Lab</summary>
           <div>
             {[
+              ["/algorithms", "Algorithm explorer"],
+              ["/algorithms/caper", "CAPER inspector"],
+              ["/cyber-lab", "Cybersecurity laboratory"],
               ["/missions", "Missions"],
-              ["/dashboard", "Power flow"],
-              ["/algorithms/caper", "CAPER engine"],
-              ["/challenge", "Human vs AI"],
               ["/sandbox", "Sandbox"],
+              ["/research", "Full research"],
+              ["/dashboard", "Power-flow dashboard"],
+              ["/simulation", "3D simulator"],
+              ["/national-grid", "National grid operations"],
+              ["/challenge", "Human vs AI"],
               ["/docs", "Documentation"],
+              ["/demo", "Faculty walkthrough"],
             ].map(([h, l]) => (
-              <Link href={h} key={h}>
+              <Link
+                href={h}
+                key={h}
+                onClick={(e) =>
+                  e.currentTarget.closest("details")?.removeAttribute("open")
+                }
+              >
                 {l}
               </Link>
             ))}
           </div>
         </details>
       </nav>
+      {guided && (
+        <div className="guide-strip" role="status">
+          {path === "/"
+            ? "1 / Explore — Select a substation to see its connections, then explore a local outage."
+            : path === "/restore"
+              ? "2 / Restore — Investigate, find a plan, then apply it. Open the explanation to follow the evidence."
+              : path === "/results"
+                ? "3 / Results — Compare measured recovery with the baseline."
+                : "Technical Lab — Return to Explore to follow the case study."}
+          <button className="quiet-button" onClick={() => setGuided(false)}>
+            Close guide
+          </button>
+        </div>
+      )}
     </header>
   );
 }

@@ -46,30 +46,22 @@ export default function MissionPlayablePage() {
   ]);
 
   const kpis = session.kpis;
+  const ready =
+    !loading &&
+    session.mission_id === mission.mission_id &&
+    session.solver_provenance === "AC_SOLVED";
   const objList =
-    missionEvaluation?.objectives ||
-    mission.objectives.map((o) => {
-      const actual =
-        o.target_metric === "critical_load_restored_pct"
-          ? kpis.critical_load_restored_pct
-          : o.target_metric === "min_voltage_pu"
-            ? kpis.min_voltage_pu
-            : kpis.active_violations_count;
-      const passed =
-        o.comparator === ">="
-          ? actual >= o.target_value
-          : o.comparator === "<="
-            ? actual <= o.target_value
-            : actual === o.target_value;
-      return { ...o, actual_value: actual, passed };
-    });
-
-  const allMandatoryPassed = objList
-    .filter((o: any) => o.mandatory)
-    .every((o: any) => o.passed);
+    ready && missionEvaluation?.mission_id === mission.mission_id
+      ? missionEvaluation.objectives
+      : [];
+  const allMandatoryPassed =
+    ready && objList.length > 0 && missionEvaluation?.passed === true;
 
   return (
     <div className="flex-1 scada-grid-bg p-5 lg:p-10 space-y-4">
+      {!ready && (
+        <p role="status">Loading this mission’s authoritative state…</p>
+      )}
       {/* Top Mission Briefing & Objective Status Banner */}
       <div className="scada-panel rounded-xl p-4 border-blue-200">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3 mb-3">
@@ -112,7 +104,7 @@ export default function MissionPlayablePage() {
             >
               <Trophy className="h-4 w-4" />
               {allMandatoryPassed
-                ? "MISSION ACCOMPLISHED (GRADE S)"
+                ? `MISSION ACCOMPLISHED (GRADE ${missionEvaluation?.grade || "A"})`
                 : "IN PROGRESS — RESTORE CITY"}
             </div>
 

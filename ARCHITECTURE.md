@@ -1,111 +1,53 @@
-# GRIDSEC // ZERO — System Architecture & Engineering Specification
+# Architecture
 
-**Parent Platform:** GRIDSEC — Power Grid Cybersecurity & Resilience Platform  
-**Flagship Module:** **GRID//ZERO — THE CITY MUST STAY ALIVE**  
-**Subtitle:** *Cyber-Physical Grid Resilience, Intelligent Critical-Load Restoration & Explainable Graph Optimization*
-
----
-
-## 1. High-Level Hybrid Monorepo Architecture
-
-The repository implements a unified hybrid monorepo combining the modern **GRID//ZERO** Next.js 14 + TypeScript + React Three Fiber 3D application (`apps/web/`) with the expanded Python 3.13 + FastAPI + `pandapower` AC physics + SQLite backend (`backend/`), while preserving 100% of legacy GRIDSEC HTML/JS views (`index.html`, `app.html`, `game.html`).
+GRIDSEC remains one repository and one modern application: Next.js/React/Zustand in `apps/web`, FastAPI in `backend`, and the preserved legacy HTML/JS applications. The Next.js API rewrite forwards `/api/*` to the backend. No independent replacement application or mock result service was introduced.
 
 ```mermaid
 flowchart TD
-    subgraph Frontend ["apps/web — Next.js 14 + TypeScript + R3F 3D Frontend (Port 3000)"]
-        UI_HOME["/ — Cinematic Homepage & Live 3D City Preview"]
-        UI_SIM["/simulation — 3D City Command & Engineering Simulator"]
-        UI_MISS["/missions & /missions/[id] — 7 Tactical Campaign Missions"]
-        UI_DSA["/algorithms — 13-Algorithm Interactive DSA Trace Lab"]
-        UI_CAPER["/algorithms/caper — 8-Stage CAPER Inspector"]
-        UI_DASH["/dashboard — AC Voltage, Thermal & BESS Dashboard"]
-        UI_RES["/research & /runs/[id] — Multi-Seed Scientific Benchmarks"]
-        UI_CHAL["/challenge — Human vs. CAPER & 4 Baselines Arena"]
-        UI_STORE["Zustand Authoritative Store (useSimulationStore.ts)"]
-        R3F["React Three Fiber / Three.js 3D City Canvas (CityCanvas3D.tsx)"]
-    end
-
-    subgraph Backend ["backend/ — FastAPI + pandapower 3.5.6 + SciPy 1.18.1 (Port 8000)"]
-        API_GZ["/api/gridzero/* — Unified GRID//ZERO Router"]
-        API_PF["/api/power-flow/* — AC Load Flow & Contingency Router"]
-        API_CYB["/api/cyber/*, /api/cascades/*, /api/aegis/* — Legacy + Upgraded Routers"]
-        SESS["SimulationSessionManager (Transactional Revisions & Undo)"]
-        DSA_CAT["GridDSACatalog (13 Algorithms + Step-by-Step AlgorithmTrace)"]
-        CAPER_ENG["CAPEREngine (8-Stage Hybrid Graph + DP + AC Verification)"]
-        BASELINES["BaselineRestorationSuite (Priority, Graph, AC-Greedy, SciPy MILP)"]
-        EXP_RUN["ExperimentRunner (Multi-Seed Statistical Benchmark Engine)"]
-        PP_SOLVER["PowerFlowSolver (pandapower Newton-Raphson AC Solver)"]
-    end
-
-    UI_HOME & UI_SIM & UI_MISS & UI_DSA & UI_CAPER & UI_DASH & UI_RES & UI_CHAL --> UI_STORE
-    UI_STORE --> R3F
-    UI_STORE <-->|REST JSON / Next.js Rewrite| API_GZ
-    API_GZ --> SESS & DSA_CAT & CAPER_ENG & BASELINES & EXP_RUN
-    SESS & CAPER_ENG & BASELINES & EXP_RUN --> PP_SOLVER
+  UI[Explore / Restore / Results / Technical Lab] --> Stores[Zustand session and selected-area stores]
+  Game[GRID COMMAND] --> API[FastAPI]
+  Stores --> API
+  API --> Session[SimulationSessionManager: locked revisions and snapshots]
+  API --> Rules[GridCommandEngine: levels, validated actions, version checks, score]
+  Rules --> Session
+  API --> Research[ExperimentRunner]
+  Session --> DSA[14 actual algorithm traces]
+  Session --> CAPER[CAPER and restoration baselines]
+  Research --> CAPER
+  CAPER --> AC[pandapower AC solver]
+  Session --> AC
+  Stores --> Views[SVG network and capability-guarded lazy 3D]
+  Game --> Views
 ```
 
----
+## State ownership
 
-## 2. Directory Structure
+`SimulationSessionState` contains the network identity, revision, simulation time, faults, actual switches, batteries, overrides, AC results, facility states, KPIs and action log. `SimulationSessionManager` computes the state after each accepted action. A reentrant lock prevents two in-process operations from losing updates. Invalid targets and numeric bounds raise structured errors without committing a revision. An existing named session is retained when an internal lookup does not request another network.
 
-```text
-Cyber_Project/
-├── apps/
-│   └── web/                                  # Next.js App Router + TypeScript + Tailwind + R3F
-│       ├── src/
-│       │   ├── app/                          # 15 Application Routes
-│       │   │   ├── page.tsx                  # / (Homepage & Live 3D City Preview)
-│       │   │   ├── simulation/page.tsx       # /simulation (3D City Command Center)
-│       │   │   ├── missions/page.tsx         # /missions (7 Campaign Missions Catalog)
-│       │   │   ├── missions/[id]/page.tsx    # /missions/[id] (Playable Mission Cockpit)
-│       │   │   ├── algorithms/page.tsx       # /algorithms (13-Algorithm DSA Trace Lab)
-│       │   │   ├── algorithms/caper/page.tsx # /algorithms/caper (8-Stage CAPER Inspector)
-│       │   │   ├── dashboard/page.tsx        # /dashboard (Power Engineering Dashboard)
-│       │   │   ├── research/page.tsx         # /research (Multi-Seed Benchmark Suite)
-│       │   │   ├── runs/[id]/page.tsx        # /runs/[id] (Individual Run Trial Ledger)
-│       │   │   ├── challenge/page.tsx        # /challenge (Human vs. AI Arena)
-│       │   │   ├── national-grid/page.tsx    # /national-grid (India 59-Bus & IEEE 30-Bus)
-│       │   │   ├── cyber-lab/page.tsx        # /cyber-lab (GOOSE / FDIA / Aegis Defense)
-│       │   │   ├── sandbox/page.tsx          # /sandbox (Open-Ended Topology Sandbox)
-│       │   │   ├── docs/page.tsx             # /docs (Interactive System Documentation)
-│       │   │   └── demo/page.tsx             # /demo (5-Minute Faculty Walkthrough)
-│       │   ├── components/
-│       │   │   ├── city3d/CityCanvas3D.tsx   # Procedural 3D City, Feeders, Switches & HUD
-│       │   │   ├── layout/TopNavBar.tsx      # Global SCADA Header & Telemetry Strip
-│       │   │   └── simulation/EngineeringInspector.tsx
-│       │   ├── data/missionsCatalog.ts       # Authoritative 7 Missions Specification
-│       │   └── store/useSimulationStore.ts   # Zustand Transactional Client Store
-├── backend/
-│   ├── app/
-│   │   ├── api/routes/gridzero.py            # Unified GRID//ZERO REST API
-│   │   ├── dsa/
-│   │   │   ├── trace.py                      # AlgorithmTrace & AlgorithmTraceStep Schemas
-│   │   │   ├── algorithms_catalog.py         # All 13 DSA Implementations & Trace Generators
-│   │   │   ├── graph.py, bfs.py, dfs.py, dijkstra.py, hashing.py, priority_queue.py
-│   │   ├── power/
-│   │   │   ├── models.py                     # Bus, Line, Switch, Battery, Fault & Provenance Models
-│   │   │   ├── distribution_networks.py      # TRAINING_FEEDER (12-Bus) & IEEE_33_DISTRIBUTION
-│   │   │   ├── ieee30_network.py             # IEEE 30-Bus Transmission Benchmark
-│   │   │   ├── solver.py                     # pandapower Newton-Raphson AC Power-Flow Engine
-│   │   │   └── power_flow_service.py         # Candidate AC Cloning & Validation Service
-│   │   ├── restoration/
-│   │   │   ├── caper.py                      # 8-Stage CAPER Algorithm Engine
-│   │   │   └── baselines.py                  # Priority, Graph, AC-Greedy & SciPy HiGHS MILP
-│   │   ├── simulation/
-│   │   │   ├── session_manager.py            # Authoritative Session & 3D Building State Manager
-│   │   │   └── missions.py                   # 7 Playable Missions & Human-vs-AI Evaluator
-│   │   └── experiments/
-│   │       └── runner.py                     # Reproducible Multi-Seed Benchmark Suite & CSV Export
-│   └── test_gridzero_complete.py             # End-to-End Backend Pytest Verification Suite
-└── docs/
-    ├── upgrade/BASELINE_AUDIT.md             # Pre-Upgrade Repository & Test Audit
-    └── screenshots/                          # 16 Verified Playwright Application Screenshots
-```
+The local engineering tools intentionally share their operator session through `useSimulationStore`. Initial reference geometry is marked `REFERENCE_PREVIEW`; global connection/error feedback prevents it from masquerading as a solved electrical state. Restoration case-study snapshots retain the before state, chosen evidence, same-initial-condition comparison and applied state in browser session storage. They are kept separately so navigation cannot silently rewrite historical evidence.
 
----
+`useIndiaGridStore` owns a distinct named national session, geographic selection, modeled scope and history. Explore, national operations and the dashboard read the same selection and solved state. `gridMetrics.ts` derives the displayed scope metrics, bounds allocations by demand and excludes disconnected assets. Geographic drill-down to the training feeder is explicitly educational and separate.
 
-## 3. Single Authoritative Simulation State
+## GRID COMMAND
 
-All three experiences (**The 3D Game**, **The Engineering Simulator**, and **The Research Laboratory**) operate on the same `SimulationSessionState` managed by `SimulationSessionManager`:
-- Every switch toggle, fault injection, BESS dispatch (`kW`), load curtailment (`MW`), or upstream capacity limit (`MW`) increments an atomic `revision` counter, pushes a snapshot onto the undo stack, solves a full `pandapower` Newton-Raphson AC load flow, and updates the 3D city building states (`ENERGIZED`, `BACKUP_BATTERY`, `CURTAILED`, `BLACKOUT`, `SOURCE_ACTIVE`).
+The game uses the same session-manager class, training network, solver and DSA/CAPER implementation through its own named sessions. The server owns turn budgets, repair credits, deterministic storm events, scoring, initial snapshots, undo history and accepted moves. `/api/grid-command/*` validates actions and expected versions. Game and physical bookkeeping roll back together on failure. The frontend renders returned snapshots and does not compute a separate electrical result.
 
+A game can repair a branch, operate a real switch, dispatch the modeled solar generator or finite BESS, allocate flexible demand and set an intake budget. Completion requires the objectives and hard AC operating limits. CAPER comparisons use the original scenario, even after human repairs. See [game rules](docs/GRID_COMMAND.md) for costs, scoring and exact controls.
+
+## Rendering lifecycle
+
+Every modern Three.js initialization runs through `CityCanvas3D`. A cached WebGL2 capability probe precedes lazy import of `CityRenderer3D`; its temporary context is released. Unsupported graphics, renderer errors or context loss choose the shared SVG `FeederDiagram`. Failures persist for the browser session, preventing repeated initialization. Scene DPR is bounded, rendering is demand-driven and hidden tabs suspend scene rendering. Renderer controls/listeners and scene resources follow the mounted canvas lifecycle.
+
+The SVG view uses the same authoritative facilities, lines, transformers, switches and trace IDs as the 3D scene. It supports keyboard selection, inspection, pan/zoom and overlays. Games and the main explanatory flow can stay in 2D regardless of GPU support.
+
+## Analysis and provenance
+
+The original 13 DSA implementations remain; source–critical-load bipartite matching is an additional traceable planning algorithm. Max-flow retains its compatibility API identifier `MIN_COST_MAX_FLOW`, but its UI and documentation accurately identify the implementation as Edmonds–Karp max-flow/min-cut, not minimum-cost optimization. Algorithms inspect current faults, switching, source budgets and allocation where applicable. Candidate routing may include operable open ties; those are proposals requiring switching and subsequent AC validation.
+
+Cyber analysis runs the existing detector API on a separate IEEE 30-bus sandbox. Its response contains actual classification, physical-state comparison, BFS impact, incident prioritization and execution evidence. Local synthetic feeder exercises are labeled separately and no longer invent successful IDS residual tests or restoration percentages.
+
+Research summaries and CSV exports come from computed ExperimentRunner records. Missing data produces loading/error/empty states; fabricated leaderboard and statistical fallbacks have been removed. Raw demand percentages that include infeasible attempts are qualified as attempted supply.
+
+## Deployment limits
+
+This is a local-process engineering product. Session/research/game records are in memory; game IDs alone are retained by the browser. Server restarts expire games. Locks and expected versions protect one process; distributed storage and cross-worker transactions, authentication, production monitoring and live national telemetry are not implemented. Run a single backend worker for the supplied experience. These constraints must be resolved before operating a public multiplayer or utility-facing service.

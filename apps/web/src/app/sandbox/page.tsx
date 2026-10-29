@@ -1,59 +1,101 @@
 "use client";
 
-import React from "react";
 import { CityCanvas3D } from "@/components/city3d/CityCanvas3D";
 import { EngineeringInspector } from "@/components/simulation/EngineeringInspector";
 import { useSimulationStore } from "@/store/useSimulationStore";
-import { Wrench, Sparkles, RotateCcw } from "lucide-react";
 
 export default function SandboxPage() {
-  const { session, resetSession, applyAction, applyRestorationPlan } =
-    useSimulationStore();
-
+  const {
+    session,
+    resetSession,
+    undoAction,
+    runCaper,
+    applyRestorationPlan,
+    caperResult,
+    loading,
+    error,
+  } = useSimulationStore();
+  const unavailable =
+    loading || session.solver_provenance === "REFERENCE_PREVIEW";
+  const candidate = caperResult?.selected_candidate;
   return (
     <div className="flex-1 scada-grid-bg p-5 lg:p-10 space-y-5">
-      <div className="scada-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 border-blue-200">
+      <div className="page-heading">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 border border-blue-200 font-sans text-xs text-blue-700 mb-1.5">
-            OPEN-ENDED ENGINEERING & TOPOLOGY SANDBOX
-          </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">
-            Custom Contingency, BESS Horizon & Radial Reconfiguration Sandbox
-          </h1>
-          <p className="text-xs text-slate-600 mt-1 max-w-3xl">
-            Compose arbitrary N-k fault combinations, test tie-switch closures,
-            adjust upstream substation limits, and step discrete-time battery
-            discharge across all 4 supported networks.
+          <div className="eyebrow">Technical Lab / Sandbox</div>
+          <h1>Engineering sandbox</h1>
+          <p>
+            Test faults, routing, source limits and battery energy on the shared
+            electrical model.
           </p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => resetSession("TRAINING_FEEDER", null, null)}
-            className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 font-sans text-xs text-blue-700"
-          >
-            12-Bus Urban Feeder
-          </button>
-          <button
-            onClick={() => resetSession("IEEE_33_DISTRIBUTION", null, null)}
-            className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 font-sans text-xs text-blue-700"
-          >
-            IEEE 33-Bus Benchmark
-          </button>
-          <button
-            onClick={() => applyRestorationPlan("CAPER")}
-            className="rounded-lg bg-blue-800 px-3.5 py-2 font-sans text-xs font-bold text-white"
-          >
-            Run CAPER Solver
-          </button>
-        </div>
       </div>
-
+      <div className="scada-panel rounded-xl p-4 flex flex-wrap items-center gap-3">
+        <label className="text-sm">
+          Network{" "}
+          <select
+            aria-label="Sandbox network"
+            className="ml-2 rounded border border-slate-200 bg-white p-2"
+            disabled={loading}
+            value={session.network_id}
+            onChange={(event) => resetSession(event.target.value, null, null)}
+          >
+            {[
+              "TRAINING_FEEDER",
+              "IEEE_33_DISTRIBUTION",
+              "IEEE_30",
+              "INDIA_GRID_59",
+            ].map((id) => (
+              <option key={id}>{id}</option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="quiet-button"
+          disabled={unavailable || session.revision <= 1}
+          onClick={() => undoAction()}
+        >
+          Undo action
+        </button>
+        <button
+          className="quiet-button"
+          disabled={loading}
+          onClick={() => resetSession(session.network_id, null, null)}
+        >
+          Reset network
+        </button>
+        <button
+          className="quiet-button"
+          disabled={unavailable}
+          onClick={() => runCaper()}
+        >
+          Analyze with CAPER
+        </button>
+        <button
+          className="quiet-button"
+          disabled={
+            unavailable || !candidate?.feasible || !candidate?.ac_validated
+          }
+          onClick={() => applyRestorationPlan("CAPER")}
+        >
+          Apply feasible plan
+        </button>
+      </div>
+      {loading && (
+        <p role="status" className="text-sm text-slate-500">
+          Solving the electrical state…
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="text-sm text-red-700">
+          {error}
+        </p>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-8 min-w-0">
           <CityCanvas3D heightClass="h-[540px]" />
         </div>
-        <div className="lg:col-span-4">
+        <div className="lg:col-span-4 min-w-0">
           <EngineeringInspector />
         </div>
       </div>

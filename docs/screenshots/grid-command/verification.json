@@ -1,0 +1,78 @@
+{
+  "passed": true,
+  "webgl": false,
+  "completedLevels": 5,
+  "finalScore": 805,
+  "comparison": {
+    "initial_seed": 42,
+    "initial_faults": [
+      "LINE-02-03",
+      "LINE-03-04"
+    ],
+    "initial_source_limit_mw": 7.2,
+    "player": {
+      "critical_pct": 100,
+      "total_pct": 68.1,
+      "feasible": true,
+      "score": 805
+    },
+    "caper": {
+      "critical_pct": 100,
+      "total_pct": 71.94,
+      "feasible": true,
+      "runtime_ms": 1274.07,
+      "actions": [
+        {
+          "action_type": "ISOLATE_FAULT",
+          "target_id": "LINE-02-03",
+          "value": null,
+          "description": "Isolate faulted branch LINE-02-03"
+        },
+        {
+          "action_type": "ISOLATE_FAULT",
+          "target_id": "LINE-03-04",
+          "value": null,
+          "description": "Isolate faulted branch LINE-03-04"
+        },
+        {
+          "action_type": "CLOSE_TIE_SWITCH",
+          "target_id": "LINE-TIE-05-03",
+          "value": null,
+          "description": "Close optimal tie corridor LINE-TIE-05-03 for critical facility restoration"
+        },
+        {
+          "action_type": "CLOSE_TIE_SWITCH",
+          "target_id": "LINE-TIE-07-06",
+          "value": null,
+          "description": "Close optimal tie corridor LINE-TIE-07-06 for critical facility restoration"
+        },
+        {
+          "action_type": "DISPATCH_BATTERY",
+          "target_id": "BESS-CITY-1",
+          "value": 1700,
+          "description": "Dispatch 1700 kW (1.70 MW) from Central Grid-Scale BESS (4.0 MWh / 2.0 MW)"
+        },
+        {
+          "action_type": "DISPATCH_BATTERY",
+          "target_id": "BESS-HOSP-1",
+          "value": 510,
+          "description": "Dispatch 510 kW (0.51 MW) from Hospital Emergency Microgrid Battery (1.0 MWh / 0.6 MW)"
+        },
+        {
+          "action_type": "SHED_NON_CRITICAL_LOAD",
+          "target_id": "LOAD-INDUSTRIAL",
+          "value": 3.2,
+          "description": "DP-guided curtailment of 3.20 MW at East Heavy Semiconductor & Arc Furnace Plant (Priority Tier 3)"
+        },
+        {
+          "action_type": "SHED_NON_CRITICAL_LOAD",
+          "target_id": "LOAD-COMMERCIAL",
+          "value": 0.84,
+          "description": "DP-guided curtailment of 0.84 MW at Downtown Commercial Mall & Fleet Charging (Priority Tier 3)"
+        }
+      ]
+    },
+    "note": "Both start from the same initial seed, faults and intake limit. CAPER is a static restoration comparator; it does not predict later storm waves in level 4. Percentages are attempted supply unless the corresponding AC result is feasible."
+  },
+  "browserErrors": []
+}

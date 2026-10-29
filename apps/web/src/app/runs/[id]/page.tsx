@@ -9,14 +9,18 @@ export default function RunDetailsPage() {
   const params = useParams();
   const runId = String(params?.id || "RUN-DEFAULT-BENCHMARK");
   const [runData, setRunData] = useState<any | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetch(`/api/gridzero/research/runs/${encodeURIComponent(runId)}`)
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (!r.ok) throw Error("Run unavailable (" + r.status + ")");
+        return r.json();
+      })
       .then((d) => {
         if (d?.run) setRunData(d.run);
       })
-      .catch(() => {});
+      .catch((e) => setError(String(e)));
   }, [runId]);
 
   const trials = runData?.trials || [];
@@ -41,19 +45,29 @@ export default function RunDetailsPage() {
             <p className="font-sans text-xs text-slate-500">
               Network: {runData?.network_id || "TRAINING_FEEDER"} • Base Seed:{" "}
               {runData?.base_seed || 42} • Provenance:{" "}
-              {runData?.solver_provenance || "AC_SOLVED"}
+              {runData?.solver_provenance || "Awaiting results"}
             </p>
           </div>
         </div>
 
         <a
-          href={`/api/gridzero/research/runs/${runId}/export-csv`}
+          aria-disabled={!runData}
+          onClick={(e) => {
+            if (!runData) e.preventDefault();
+          }}
+          href={
+            runData
+              ? `/api/gridzero/research/runs/${runId}/export-csv`
+              : undefined
+          }
           className="flex items-center gap-1.5 rounded-lg bg-blue-800 hover:bg-blue-800 px-4 py-2 font-sans text-xs font-bold text-white transition"
         >
           <Download className="h-4 w-4" /> Download Full CSV Artifact
         </a>
       </div>
 
+      {error && <p role="alert">{error}</p>}
+      {!runData && !error && <p role="status">Loading measured run…</p>}
       {/* Trial-by-Trial Ledger */}
       <div className="scada-panel rounded-xl p-5">
         <h2 className="font-sans text-sm font-bold text-slate-900 mb-3">
@@ -68,8 +82,8 @@ export default function RunDetailsPage() {
                 <th className="py-2 px-2">Faulted Corridors</th>
                 <th className="py-2 px-2">Algorithm</th>
                 <th className="py-2 px-2">AC Feasible</th>
-                <th className="py-2 px-2">Crit Restored (%)</th>
-                <th className="py-2 px-2">Total Restored (%)</th>
+                <th className="py-2 px-2">Attempted Critical (%)</th>
+                <th className="py-2 px-2">Attempted Total (%)</th>
                 <th className="py-2 px-2">Min V (pu)</th>
                 <th className="py-2 px-2">Max Load (%)</th>
                 <th className="py-2 px-2">Switches</th>

@@ -138,6 +138,7 @@ def reset_session(req: SessionResetRequest) -> Dict[str, Any]:
             mission_id=req.mission_id,
             session_id=req.session_id,
             seed=req.seed,
+            source_capacity_limit_mw=req.source_capacity_limit_mw,
         )
         net_data = power_flow_service.get_network_topology(started["session"]["network_id"])
         return {
